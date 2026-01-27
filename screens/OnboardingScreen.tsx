@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Car, Store, User, Camera, ChevronLeft, ShieldCheck, Loader2 } from 'lucide-react';
+import { Car, Store, User, ChevronLeft, Loader2, Phone } from 'lucide-react';
 import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
 import { OnboardingDriverFlow } from './OnboardingDriverFlow';
@@ -9,10 +8,10 @@ import { OnboardingMerchantFlow } from './OnboardingMerchantFlow';
 
 import { supabase } from '../lib/supabase';
 
-export type OnboardingStep = 'WELCOME' | 'INFO' | 'VERIFY' | 'ROLE' | 'DRIVER_FORM' | 'DRIVER_DOCS' | 'MERCHANT_FORM' | 'MERCHANT_DOCS';
+export type OnboardingStep = 'WELCOME' | 'PHONE_INPUT' | 'VERIFY' | 'INFO' | 'ROLE' | 'DRIVER_FORM' | 'DRIVER_DOCS' | 'MERCHANT_FORM' | 'MERCHANT_DOCS';
 
 export const OnboardingScreen: React.FC = () => {
-  const { updateProfile, completeOnboarding, setRole, secondaryOnboardingRole, cancelSecondaryOnboarding, profile, setCurrentTab } = useApp();
+  const { updateProfile, completeOnboarding, setRole, secondaryOnboardingRole, cancelSecondaryOnboarding, profile, setCurrentTab, loadUserData } = useApp();
   const [stepIndex, setStepIndex] = useState(0);
 
   const [name, setName] = useState('');
@@ -26,26 +25,33 @@ export const OnboardingScreen: React.FC = () => {
   const steps = ((): OnboardingStep[] => {
     if (secondaryOnboardingRole === 'DRIVER') return ['DRIVER_FORM', 'DRIVER_DOCS'];
     if (secondaryOnboardingRole === 'MERCHANT') return ['MERCHANT_FORM', 'MERCHANT_DOCS'];
-    const base: OnboardingStep[] = ['WELCOME', 'INFO', 'VERIFY', 'ROLE'];
-    if (selectedRole === 'DRIVER') return [...base, 'DRIVER_FORM', 'DRIVER_DOCS'];
-    if (selectedRole === 'MERCHANT') return [...base, 'MERCHANT_FORM', 'MERCHANT_DOCS'];
-    if (selectedRole === 'BOTH') return [...base, 'DRIVER_FORM', 'DRIVER_DOCS', 'MERCHANT_FORM', 'MERCHANT_DOCS'];
-    return base;
+
+    // Standard flow base
+    const base: OnboardingStep[] = ['WELCOME', 'PHONE_INPUT', 'VERIFY'];
+
+    // We dynamically add INFO if needed (handled in logic), but for steps array consistency:
+    // This array is mainly for progress bar. We might jump over INFO.
+    const remaining = ['INFO', 'ROLE'];
+
+    if (selectedRole === 'DRIVER') return [...base, ...remaining, 'DRIVER_FORM', 'DRIVER_DOCS'];
+    if (selectedRole === 'MERCHANT') return [...base, ...remaining, 'MERCHANT_FORM', 'MERCHANT_DOCS'];
+    if (selectedRole === 'BOTH') return [...base, ...remaining, 'DRIVER_FORM', 'DRIVER_DOCS', 'MERCHANT_FORM', 'MERCHANT_DOCS'];
+    return [...base, ...remaining];
   })();
 
-  // Skip steps if user already has profile details (name, phone)
+  // Skip logic: if already logged in and just missing data, jump to correct step
+  // But for the new flow, we generally start at the beginning unless it's a secondary onboarding
   useEffect(() => {
-    if (secondaryOnboardingRole !== null) return; // Don't skip if manual add-role
+    if (secondaryOnboardingRole !== null) return;
 
-    if (profile.name && profile.phone && stepIndex < steps.indexOf('ROLE')) {
-      const roleIndex = steps.indexOf('ROLE');
-      if (roleIndex !== -1) {
-        setStepIndex(roleIndex);
-      }
-    }
-  }, [profile.name, profile.phone, secondaryOnboardingRole]);
+    // If we somehow have phone but no name, we might be in the middle of this flow
+    // But usually we trust the local state 'stepIndex'
+  }, [secondaryOnboardingRole]);
 
   const currentStep = steps[stepIndex];
+
+  // Progress calculation needs to handle the dynamic 'INFO' skip
+  // Simple approximation for now
   const progressWidth = ((stepIndex + 1) / steps.length) * 100;
   const isDocStep = currentStep.endsWith('_DOCS');
 
@@ -119,33 +125,41 @@ export const OnboardingScreen: React.FC = () => {
           .eq('id', data.user.id)
           .single();
 
-        if (existingProfile && (existingProfile.role === 'DRIVER' || existingProfile.role === 'MERCHANT' || existingProfile.role === 'BOTH')) {
-          // User exists and has a role -> Skip onboarding
-          await completeOnboarding(); // This loads the profile into context
-          setIsVerifying(false);
-          // Redirect based on role
-          if (existingProfile.role === 'MERCHANT') {
-            setCurrentTab('merchant');
-          } else {
-            setCurrentTab('home');
-          }
-          return;
-        }
+        if (existingProfile && existingProfile.full_name) {
+          // User exists and has a name -> Dashboard
+          // Check if they have a role to skip role selection too
 
-        // New user or incomplete profile -> Create/Update logic
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
-          full_name: name,
-          phone: fullPhone,
-          age: age,
-          gender: gender,
-          role: 'customer'
-        });
-        if (profileError) console.error("Immediate Profile Save Error:", profileError);
+          // Sync context with fetched profile
+          await loadUserData(data.user.id); // Force refresh from DB
+
+          if (existingProfile.role && existingProfile.role !== 'CUSTOMER') {
+            // Fully onboarded
+            await completeOnboarding();
+            setIsVerifying(false);
+            if (existingProfile.role === 'MERCHANT') {
+              setCurrentTab('merchant');
+            } else {
+              setCurrentTab('home');
+            }
+            return;
+          }
+
+          // Has name but maybe no role (unlikely given previous logic, but possible)
+          // Skip INFO (Name/Age), Go to ROLE
+          setStepIndex(steps.indexOf('ROLE'));
+        } else {
+          // New user OR incomplete profile (no name)
+          // Go to INFO (Name/Age)
+          // We update the phone in profile context now that it's verified
+          updateProfile({ phone: fullPhone });
+          setStepIndex(steps.indexOf('INFO'));
+        }
+      } else {
+        // Should not happen on successful verify
+        setStepIndex(steps.indexOf('INFO'));
       }
 
       setIsVerifying(false);
-      handleNext();
     } catch (err: any) {
       console.error("OTP Verification failed", err);
       alert(`Invalid code: ${err.message}`);
@@ -193,31 +207,61 @@ export const OnboardingScreen: React.FC = () => {
         </div>
       </div>
       <div className="space-y-6 shrink-0">
-        <button onClick={() => handleNext()} className="w-full bg-[#00E39A] text-slate-900 font-black text-[20px] py-5 rounded-[24px] shadow-lg active:scale-[0.97] transition-all">Get Started</button>
+        <button onClick={() => setStepIndex(steps.indexOf('PHONE_INPUT'))} className="w-full bg-[#00E39A] text-slate-900 font-black text-[20px] py-5 rounded-[24px] shadow-lg active:scale-[0.97] transition-all">Get Started</button>
       </div>
     </div>
   );
 
+  const renderPhoneInput = () => {
+    const canContinue = phone.length >= 7;
+    return (
+      <div className="px-8 pb-10 pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+        <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Enter your phone</h2>
+        <p className="text-slate-500 text-[15px] mb-8 font-medium">We'll send you a code to verify it.</p>
+
+        <div className="flex-1">
+          <Input
+            label="Phone Number"
+            prefix="+220"
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="*******"
+            type="tel"
+            maxLength={7}
+            autoFocus
+          />
+        </div>
+
+        <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-5 rounded-[22px] mt-8 transition-all text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
+          {isVerifying ? <Loader2 className="animate-spin" /> : null}
+          {isVerifying ? 'Sending...' : 'Send Code'}
+        </button>
+      </div>
+    )
+  }
+
   const renderInfo = () => {
     const ageOptions = Array.from({ length: 68 }, (_, i) => ({ label: `${i + 18}`, value: `${i + 18}` }));
     const genderOptions = [{ label: 'Male', value: 'MALE' }, { label: 'Female', value: 'FEMALE' }, { label: 'Other', value: 'OTHER' }];
-    const canContinue = name.trim().length >= 3 && phone.length >= 7;
+    const canContinue = name.trim().length >= 3;
 
     return (
       <div className="px-8 pb-10 pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
         <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Tell us about yourself</h2>
         <p className="text-slate-500 text-[15px] mb-8 font-medium">Your data is stored securely with your profile.</p>
         <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
-          <Input label="Full Name" value={name} onChange={e => { setName(e.target.value); updateProfile({ name: e.target.value }); }} placeholder="e.g. Musa Camara" />
+          <Input label="Full Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Musa Camara" />
           <div className="flex gap-4">
             <Dropdown label="Age" value={age} options={ageOptions} onChange={setAge} containerClassName="flex-1" searchable />
             <Dropdown label="Gender" value={gender} options={genderOptions} onChange={val => setGender(val as any)} containerClassName="flex-1" />
           </div>
-          <Input label="Phone Number" prefix="+220" value={phone} onChange={e => { setPhone(e.target.value); updateProfile({ phone: e.target.value }); }} placeholder="*******" type="tel" maxLength={7} />
         </div>
-        <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-5 rounded-[22px] mt-8 transition-all text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
-          {isVerifying ? <Loader2 className="animate-spin" /> : null}
-          {isVerifying ? 'Sending...' : 'Verify Phone'}
+        <button onClick={() => {
+          // Save profile details to DB immediately to avoid loss
+          updateProfile({ name, age: parseInt(age), gender: gender });
+          handleNext();
+        }} disabled={!canContinue} className={`w-full font-black py-5 rounded-[22px] mt-8 transition-all text-lg flex items-center justify-center gap-2 ${canContinue ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
+          Continue
         </button>
       </div>
     );
@@ -256,7 +300,7 @@ export const OnboardingScreen: React.FC = () => {
           }`}
       >
         {isVerifying && <Loader2 className="animate-spin" />}
-        {isVerifying ? 'Verifying...' : 'Continue to Role Selection'}
+        {isVerifying ? 'Verifying...' : 'Verify'}
       </button>
     </div>
   );
@@ -297,7 +341,9 @@ export const OnboardingScreen: React.FC = () => {
 
           {currentStep !== 'INFO' && (
             <div className="px-6 py-4 flex items-center justify-between">
-              {/* Only show back button if not in VERIFY step or if no OTP has been entered yet */}
+              {/* Only show back button if not in VERIFY step or if no OTP has been entered yet. 
+                 Also, in PHONE_INPUT we can go back to WELCOME. 
+              */}
               {(currentStep !== 'VERIFY' || otp.every(d => !d)) ? (
                 <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors">
                   <ChevronLeft size={24} className="text-slate-900 dark:text-white" />
@@ -312,6 +358,7 @@ export const OnboardingScreen: React.FC = () => {
       )}
 
       {currentStep === 'WELCOME' && renderWelcome()}
+      {currentStep === 'PHONE_INPUT' && renderPhoneInput()}
       {currentStep === 'INFO' && renderInfo()}
       {currentStep === 'VERIFY' && renderVerify()}
       {currentStep === 'ROLE' && renderRoleSelection()}
