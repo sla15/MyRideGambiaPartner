@@ -546,7 +546,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 };
                 const rideType = rideVehicleTypeMapping[newRide.requested_vehicle_type] || 'ECONOMIC';
 
-                const isEligibleForDelivery = newRide.type === 'DELIVERY';
+                const isEligibleForDelivery = newRide.type === 'DELIVERY' || newRide.type === 'MERCHANT_DELIVERY' || newRide.ride_type === 'MERCHANT_DELIVERY';
 
                 const estCommission = (parseFloat(newRide.price || '0') * appSettings.commission_percentage) / 100;
                 const currentProfile = profileRef.current;
@@ -607,7 +607,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             if (isDeliveryEligible) {
                 // If delivery eligible, show rides of their type OR any delivery ride
-                query = query.or(`requested_vehicle_type.eq.${dbType},type.eq.DELIVERY`);
+                query = query.or(`requested_vehicle_type.eq.${dbType},type.eq.DELIVERY,type.eq.MERCHANT_DELIVERY,ride_type.eq.MERCHANT_DELIVERY`);
             } else {
                 query = query.eq('requested_vehicle_type', dbType);
             }

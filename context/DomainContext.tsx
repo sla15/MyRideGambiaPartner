@@ -285,14 +285,24 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             if (orderErr || !order) throw new Error("Order not found");
 
-            const batchId = order.batch_id;
+            let batchId = order.batch_id;
 
-            // 2. Fetch all orders in this batch (except cancelled) to ensure full route and total cash
-            const { data: batchOrders } = await supabase
-                .from('orders')
-                .select('*, businesses(*)')
-                .eq('batch_id', batchId)
-                .neq('status', 'cancelled');
+            // If no batch_id exists, create one and update the order
+            if (!batchId) {
+                batchId = crypto.randomUUID();
+                await supabase.from('orders').update({ batch_id: batchId }).eq('id', orderId);
+            }
+
+            // 2. Fetch all orders in this batch (or just this order if no batch)
+            let batchOrders = [order];
+            if (batchId) {
+                const { data } = await supabase
+                    .from('orders')
+                    .select('*, businesses(*)')
+                    .eq('batch_id', batchId)
+                    .neq('status', 'cancelled');
+                if (data) batchOrders = data;
+            }
 
             // 3. Calculate Total Cash Upfront (sum of order item totals) - Round up to next figure
             const totalCashUpfront = Math.ceil(batchOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || '0'), 0) || parseFloat(order.total_amount));
@@ -344,10 +354,14 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const { data: existingRide } = await supabase
                 .from('rides')
                 .select('*')
-                .eq('batch_id', batchId)
+                .eq(batchId ? 'batch_id' : 'id', batchId || 'none') // Safety check
                 .neq('status', 'completed')
                 .neq('status', 'cancelled')
                 .maybeSingle();
+
+            // Special case for single orders if no batch_id: 
+            // We search by custom logic or just create new if no batch exists to group by.
+            // But usually we always want a batch_id for merchant deliveries to group them.
 
             if (existingRide) {
                 // Update existing ride with new stops, cash total, and updated price
@@ -537,8 +551,10 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 await createDeliveryRequest(orderId);
             }
 
-            // 3. If status is 'cancelled', check if we need to cancel the associated ride
+            // 3. If status is 'cancelled', hide from merchant and check batch
             if (status === 'cancelled') {
+                await supabase.from('orders').update({ hidden_by_merchant: true }).eq('id', orderId);
+
                 const { data: orderData } = await supabase.from('orders').select('batch_id').eq('id', orderId).single();
                 if (orderData?.batch_id) {
                     const { data: otherOrders } = await supabase

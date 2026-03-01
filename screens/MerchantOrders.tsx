@@ -230,6 +230,12 @@ export const MerchantOrders: React.FC = () => {
                                         <p className="text-blue-600 dark:text-blue-400 text-sm font-bold">Driver has arrived for pickup!</p>
                                     </div>
                                 )}
+                                {selectedOrder.status === 'delivering' && (
+                                    <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-3">
+                                        <Truck className="animate-pulse text-indigo-500" size={20} />
+                                        <p className="text-indigo-600 dark:text-indigo-400 text-sm font-bold">Driver is assigned and on the way!</p>
+                                    </div>
+                                )}
                                 {['delivering', 'arrived', 'ready', 'preparing', 'accepted'].includes(selectedOrder.status) && (
                                     <button onClick={() => handleStatusChange(selectedOrder.id, 'completed')} className="w-full h-16 bg-green-600 dark:bg-green-500 text-white font-black rounded-2xl text-lg shadow-lg mt-2">
                                         Force Complete Order
