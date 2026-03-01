@@ -292,6 +292,17 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         });
                         merchants = Object.values(mGrouped);
                     }
+                } else if (activeRide.stops) {
+                    // Fallback for single orders: use the stops column which is JSONB
+                    const stopsData = typeof activeRide.stops === 'string' ? JSON.parse(activeRide.stops) : activeRide.stops;
+                    if (Array.isArray(stopsData)) {
+                        merchants = stopsData.map((s: any) => ({
+                            name: s.business_name || s.name || 'Shop',
+                            phone: s.business_phone || s.phone || '',
+                            address: s.business_address || s.address || '',
+                            amount: s.estimated_cash || 0
+                        }));
+                    }
                 }
 
                 const newRideObj = {
@@ -690,6 +701,17 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                     mGrouped[bo.business_id].amount += parseFloat(bo.total_amount || '0');
                                 });
                                 merchants = Object.values(mGrouped);
+                            }
+                        } else if (newRide.stops) {
+                            // Fallback for single orders: use the stops column
+                            const stopsData = typeof newRide.stops === 'string' ? JSON.parse(newRide.stops) : newRide.stops;
+                            if (Array.isArray(stopsData)) {
+                                merchants = stopsData.map((s: any) => ({
+                                    name: s.business_name || s.name || 'Shop',
+                                    phone: s.business_phone || s.phone || '',
+                                    address: s.business_address || s.address || '',
+                                    amount: s.estimated_cash || 0
+                                }));
                             }
                         }
 

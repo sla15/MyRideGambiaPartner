@@ -23,6 +23,7 @@ interface RideDrawerProps {
     queueCount?: number;
     currentLat?: number;
     currentLng?: number;
+    isProcessing?: boolean;
 }
 
 export const RideDrawer: React.FC<RideDrawerProps> = ({
@@ -43,7 +44,8 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
     rideType = 'PASSENGER',
     queueCount = 1,
     currentLat,
-    currentLng
+    currentLng,
+    isProcessing = false
 }) => {
     const [showCashConfirm, setShowCashConfirm] = React.useState(false);
 
@@ -277,11 +279,12 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                 <div className="space-y-3">
                                     {rideType === 'DELIVERY' && currentRide.total_cash_upfront && !showCashConfirm ? (
                                         <button
+                                            disabled={isProcessing}
                                             onClick={() => setShowCashConfirm(true)}
-                                            className="w-full bg-[#00E39A] hover:bg-[#00C285] active:scale-[0.98] transition-all h-14 rounded-full flex items-center justify-center shadow-lg"
+                                            className={`w-full bg-[#00E39A] hover:bg-[#00C285] active:scale-[0.98] transition-all h-14 rounded-full flex items-center justify-center shadow-lg ${isProcessing ? 'opacity-70' : ''}`}
                                         >
                                             <span className="text-black font-black text-lg tracking-wide uppercase">
-                                                Take Delivery
+                                                {isProcessing ? 'Processing...' : 'Take Delivery'}
                                             </span>
                                         </button>
                                     ) : showCashConfirm ? (
@@ -297,37 +300,44 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                                     Cancel
                                                 </button>
                                                 <button
+                                                    disabled={isProcessing}
                                                     onClick={onAccept}
-                                                    className="py-3 rounded-2xl bg-orange-500 text-white font-black uppercase text-xs shadow-lg"
+                                                    className={`py-3 rounded-2xl bg-orange-500 text-white font-black uppercase text-xs shadow-lg flex items-center justify-center gap-2 ${isProcessing ? 'opacity-70' : ''}`}
                                                 >
-                                                    Yes, I have it
+                                                    {isProcessing && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                                                    {isProcessing ? 'Wait...' : 'Yes, I have it'}
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
                                         <button
+                                            disabled={isProcessing}
                                             onClick={onAccept}
-                                            className="w-full bg-[#00E39A] hover:bg-[#00C285] active:scale-[0.98] transition-all h-14 rounded-full flex items-center justify-between px-2 relative overflow-hidden shadow-lg"
+                                            className={`w-full bg-[#00E39A] hover:bg-[#00C285] active:scale-[0.98] transition-all h-14 rounded-full flex items-center justify-between px-2 relative overflow-hidden shadow-lg ${isProcessing ? 'opacity-70' : ''}`}
                                         >
                                             <div className="w-12 h-12 rounded-full bg-black/10 flex items-center justify-center">
-                                                <Check size={20} className="text-black" />
+                                                {isProcessing ? (
+                                                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                ) : <Check size={20} className="text-black" />}
                                             </div>
                                             <span className="text-black font-black text-lg tracking-wide flex-1 text-center pr-12 uppercase">
-                                                Take {rideType === 'DELIVERY' ? 'Delivery' : 'Ride'}
+                                                {isProcessing ? 'Processing...' : `Take ${rideType === 'DELIVERY' ? 'Delivery' : 'Ride'}`}
                                             </span>
-                                            <div className="absolute right-2 top-2 bottom-2 w-10 h-10 flex items-center justify-center">
-                                                <svg className="w-full h-full transform -rotate-90">
-                                                    <circle cx="20" cy="20" r="18" stroke="black" strokeWidth="2" fill="none" opacity="0.1" />
-                                                    <circle
-                                                        cx="20" cy="20" r="18"
-                                                        stroke="black" strokeWidth="2" fill="none"
-                                                        strokeDasharray={113}
-                                                        strokeDashoffset={113 - (113 * countdown) / 20}
-                                                        className="transition-all duration-1000 ease-linear"
-                                                    />
-                                                </svg>
-                                                <span className="absolute text-[10px] font-black text-black">{countdown}</span>
-                                            </div>
+                                            {!isProcessing && (
+                                                <div className="absolute right-2 top-2 bottom-2 w-10 h-10 flex items-center justify-center">
+                                                    <svg className="w-full h-full transform -rotate-90">
+                                                        <circle cx="20" cy="20" r="18" stroke="black" strokeWidth="2" fill="none" opacity="0.1" />
+                                                        <circle
+                                                            cx="20" cy="20" r="18"
+                                                            stroke="black" strokeWidth="2" fill="none"
+                                                            strokeDasharray={113}
+                                                            strokeDashoffset={113 - (113 * countdown) / 20}
+                                                            className="transition-all duration-1000 ease-linear"
+                                                        />
+                                                    </svg>
+                                                    <span className="absolute text-[10px] font-black text-black">{countdown}</span>
+                                                </div>
+                                            )}
                                         </button>
                                     )}
                                 </div>
@@ -336,11 +346,21 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                             {rideStatus === 'ACCEPTED' && (
                                 <div className="space-y-3">
                                     <button
+                                        disabled={isProcessing}
                                         onClick={onArrived}
-                                        className="w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest"
+                                        className={`w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest ${isProcessing ? 'opacity-70' : ''}`}
                                     >
-                                        <MapPin size={24} />
-                                        {rideType === 'MERCHANT_DELIVERY' ? 'Arrived at Pickup' : 'I Have Arrived'}
+                                        {isProcessing ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 border-4 border-black/20 border-t-black rounded-full animate-spin" />
+                                                Please wait...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <MapPin size={24} />
+                                                {rideType === 'MERCHANT_DELIVERY' ? 'Arrived at Pickup' : 'I Have Arrived'}
+                                            </>
+                                        )}
                                     </button>
 
                                     {/* Contact Buttons */}
@@ -372,10 +392,20 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                             {rideStatus === 'ARRIVED' && (
                                 <div className="space-y-3">
                                     <button
+                                        disabled={isProcessing}
                                         onClick={onStartRide}
-                                        className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
+                                        className={`w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black ${isProcessing ? 'opacity-70' : ''}`}
                                     >
-                                        <Play size={22} fill="currentColor" /> {rideType === 'MERCHANT_DELIVERY' ? 'START DELIVERY' : 'START TRIP'}
+                                        {isProcessing ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                Starting...
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Play size={22} fill="currentColor" /> {rideType === 'MERCHANT_DELIVERY' ? 'START DELIVERY' : 'START TRIP'}
+                                            </>
+                                        )}
                                     </button>
 
                                     {/* Contact Buttons */}
@@ -408,10 +438,20 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                 <div className="space-y-3">
                                     {rideType === 'DELIVERY' && (
                                         <button
+                                            disabled={isProcessing}
                                             onClick={onComplete}
-                                            className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-black active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest"
+                                            className={`w-full bg-[#00E39A] text-black h-14 rounded-2xl font-black active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest ${isProcessing ? 'opacity-70' : ''}`}
                                         >
-                                            <CheckCircle size={22} /> FINISH DELIVERY
+                                            {isProcessing ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                    Syncing...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle size={22} /> FINISH DELIVERY
+                                                </>
+                                            )}
                                         </button>
                                     )}
 
@@ -429,10 +469,20 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                             if (dist < 0.2) {
                                                 return (
                                                     <button
+                                                        disabled={isProcessing}
                                                         onClick={onComplete}
-                                                        className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-black active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest animate-bounce"
+                                                        className={`w-full bg-[#00E39A] text-black h-14 rounded-2xl font-black active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest animate-bounce ${isProcessing ? 'opacity-70' : ''}`}
                                                     >
-                                                        <CheckCircle size={22} /> FINISH RIDE
+                                                        {isProcessing ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                                Ending...
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <CheckCircle size={22} /> FINISH RIDE
+                                                            </>
+                                                        )}
                                                     </button>
                                                 );
                                             }

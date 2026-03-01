@@ -29,33 +29,44 @@ export const MerchantOrders: React.FC = () => {
     const { merchantOrders, updateOrderStatus, openChat, pushNotification, createDeliveryRequest, deleteOrder } = useApp();
     const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-        const success = await updateOrderStatus(orderId, newStatus);
-        if (success) {
-            pushNotification('Order Updated', `Order #${orderId.slice(0, 8)} marked as ${newStatus}`, 'ORDER');
+        setIsProcessing(orderId);
+        try {
+            const success = await updateOrderStatus(orderId, newStatus);
+            if (success) {
+                pushNotification('Order Updated', `Order #${orderId.slice(0, 8)} marked as ${newStatus}`, 'ORDER');
 
-            // Update selected order in modal if open
-            if (selectedOrder && selectedOrder.id === orderId) {
-                const updated = merchantOrders.find(o => o.id === orderId);
-                if (updated) setSelectedOrder({ ...updated, status: newStatus });
-            }
+                // Update selected order in modal if open
+                if (selectedOrder && selectedOrder.id === orderId) {
+                    const updated = merchantOrders.find(o => o.id === orderId);
+                    if (updated) setSelectedOrder({ ...updated, status: newStatus });
+                }
 
-            if (newStatus === 'ready') {
-                const deliverySuccess = await createDeliveryRequest(orderId);
-                if (deliverySuccess) {
-                    pushNotification('Delivery Search', 'Searching for nearby drivers...', 'SYSTEM');
+                if (newStatus === 'ready') {
+                    const deliverySuccess = await createDeliveryRequest(orderId);
+                    if (deliverySuccess) {
+                        pushNotification('Delivery Search', 'Searching for nearby drivers...', 'SYSTEM');
+                    }
                 }
             }
+        } finally {
+            setIsProcessing(null);
         }
     };
 
     const handleRejectOrder = async (orderId: string) => {
         if (window.confirm('Are you sure you want to reject this order?')) {
-            const success = await updateOrderStatus(orderId, 'cancelled');
-            if (success) {
-                pushNotification('Order Rejected', `Order #${orderId.slice(0, 8)} has been cancelled`, 'ORDER');
-                if (selectedOrder?.id === orderId) setSelectedOrder(null);
+            setIsProcessing(orderId);
+            try {
+                const success = await updateOrderStatus(orderId, 'cancelled');
+                if (success) {
+                    pushNotification('Order Rejected', `Order #${orderId.slice(0, 8)} has been cancelled`, 'ORDER');
+                    if (selectedOrder?.id === orderId) setSelectedOrder(null);
+                }
+            } finally {
+                setIsProcessing(null);
             }
         }
     };
@@ -203,19 +214,46 @@ export const MerchantOrders: React.FC = () => {
                             <div className="space-y-3">
                                 {selectedOrder.status === 'pending' && (
                                     <div className="flex gap-2">
-                                        <button onClick={() => handleStatusChange(selectedOrder.id, 'accepted')} className="flex-1 h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg">
-                                            Accept Order
+                                        <button
+                                            disabled={isProcessing === selectedOrder.id}
+                                            onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
+                                            className={`flex-1 h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        >
+                                            {isProcessing === selectedOrder.id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                    Processing...
+                                                </div>
+                                            ) : 'Accept Order'}
                                         </button>
                                     </div>
                                 )}
                                 {selectedOrder.status === 'accepted' && (
-                                    <button onClick={() => handleStatusChange(selectedOrder.id, 'preparing')} className="w-full h-16 bg-black dark:bg-white text-white dark:text-black font-black rounded-2xl text-lg shadow-lg">
-                                        Start Preparing
+                                    <button
+                                        disabled={isProcessing === selectedOrder.id}
+                                        onClick={() => handleStatusChange(selectedOrder.id, 'preparing')}
+                                        className={`w-full h-16 bg-black dark:bg-white text-white dark:text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                    >
+                                        {isProcessing === selectedOrder.id ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-current/20 border-t-current rounded-full animate-spin" />
+                                                Processing...
+                                            </div>
+                                        ) : 'Start Preparing'}
                                     </button>
                                 )}
                                 {selectedOrder.status === 'preparing' && (
-                                    <button onClick={() => handleStatusChange(selectedOrder.id, 'ready')} className="w-full h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg">
-                                        Mark as Ready
+                                    <button
+                                        disabled={isProcessing === selectedOrder.id}
+                                        onClick={() => handleStatusChange(selectedOrder.id, 'ready')}
+                                        className={`w-full h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                    >
+                                        {isProcessing === selectedOrder.id ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                                Processing...
+                                            </div>
+                                        ) : 'Mark as Ready'}
                                     </button>
                                 )}
                                 {selectedOrder.status === 'ready' && (
@@ -237,26 +275,50 @@ export const MerchantOrders: React.FC = () => {
                                     </div>
                                 )}
                                 {['delivering', 'arrived', 'ready', 'preparing', 'accepted'].includes(selectedOrder.status) && (
-                                    <button onClick={() => handleStatusChange(selectedOrder.id, 'completed')} className="w-full h-16 bg-green-600 dark:bg-green-500 text-white font-black rounded-2xl text-lg shadow-lg mt-2">
-                                        Force Complete Order
+                                    <button
+                                        disabled={isProcessing === selectedOrder.id}
+                                        onClick={() => handleStatusChange(selectedOrder.id, 'completed')}
+                                        className={`w-full h-16 bg-green-600 dark:bg-green-500 text-white font-black rounded-2xl text-lg shadow-lg mt-2 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                    >
+                                        {isProcessing === selectedOrder.id ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                                Syncing...
+                                            </div>
+                                        ) : 'Force Complete Order'}
                                     </button>
                                 )}
                                 {['pending', 'accepted', 'preparing', 'ready', 'arrived'].includes(selectedOrder.status) && (
-                                    <button onClick={() => handleRejectOrder(selectedOrder.id)} className="w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 mt-2">
-                                        Reject Order
+                                    <button
+                                        disabled={isProcessing === selectedOrder.id}
+                                        onClick={() => handleRejectOrder(selectedOrder.id)}
+                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 mt-2 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                    >
+                                        {isProcessing === selectedOrder.id ? (
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-5 h-5 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
+                                                Cancelling...
+                                            </div>
+                                        ) : 'Reject Order'}
                                     </button>
                                 )}
                                 {['completed', 'cancelled'].includes(selectedOrder.status) && (
                                     <button
+                                        disabled={isProcessing === selectedOrder.id}
                                         onClick={async () => {
                                             if (window.confirm('Remove this order from your view? (It will be hidden but remain in our records)')) {
-                                                await deleteOrder(selectedOrder.id);
-                                                setSelectedOrder(null);
+                                                setIsProcessing(selectedOrder.id);
+                                                try {
+                                                    await deleteOrder(selectedOrder.id);
+                                                    setSelectedOrder(null);
+                                                } finally {
+                                                    setIsProcessing(null);
+                                                }
                                             }
                                         }}
-                                        className="w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30"
+                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
                                     >
-                                        Remove from View
+                                        {isProcessing === selectedOrder.id ? 'Removing...' : 'Remove from View'}
                                     </button>
                                 )}
                             </div>

@@ -309,13 +309,20 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // 4. Collect all pickup stops with names and addresses
             const merchants = batchOrders?.map(o => ({
+                id: o.business_id,
                 name: o.businesses?.name || 'Shop',
                 address: o.businesses?.location_address || '',
                 amount: parseFloat(o.total_amount || '0'),
-                phone: o.businesses?.payment_phone || ''
+                phone: o.businesses?.business_phone || ''
             })) || [];
 
-            const stops = merchants.map(m => m.address);
+            const stops = merchants.map(m => ({
+                business_id: m.id,
+                business_name: m.name,
+                business_address: m.address,
+                business_phone: m.phone,
+                estimated_cash: m.amount
+            }));
 
             // 5. Fetch Settings for Fee
             const { data: settings } = await supabase.from('app_settings').select('*').limit(1).single();
@@ -367,7 +374,6 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 // Update existing ride with new stops, cash total, and updated price
                 const { error: updateErr } = await supabase.from('rides').update({
                     stops,
-                    merchants,
                     total_cash_upfront: totalCashUpfront,
                     price: finalPrice,
                     type: 'MERCHANT_DELIVERY',
@@ -406,7 +412,6 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 requested_vehicle_type: 'scooter',
                 ride_type: 'MERCHANT_DELIVERY',
                 stops: stops,
-                merchants: merchants,
                 total_cash_upfront: totalCashUpfront,
                 current_stop_index: 0
             });
@@ -555,7 +560,7 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (status === 'cancelled') {
                 await supabase.from('orders').update({ hidden_by_merchant: true }).eq('id', orderId);
 
-                const { data: orderData } = await supabase.from('orders').select('batch_id').eq('id', orderId).single();
+                const { data: orderData } = await supabase.from('orders').select('batch_id, customer_id').eq('id', orderId).single();
                 if (orderData?.batch_id) {
                     const { data: otherOrders } = await supabase
                         .from('orders')
@@ -577,6 +582,19 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                         if (ride) {
                             await supabase.from('rides').update({ status: 'cancelled' }).eq('id', ride.id);
                         }
+                    }
+                } else if (orderData) {
+                    // Single order: find the ride associated with this customer that is still searching and cancel it
+                    const { data: ride } = await supabase
+                        .from('rides')
+                        .select('id')
+                        .eq('customer_id', orderData.customer_id)
+                        .eq('status', 'searching')
+                        .is('batch_id', null)
+                        .maybeSingle();
+
+                    if (ride) {
+                        await supabase.from('rides').update({ status: 'cancelled' }).eq('id', ride.id);
                     }
                 }
             }

@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 
 export const useRideLifecycle = (
@@ -26,6 +26,7 @@ export const useRideLifecycle = (
     setCountdown: (val: any) => void,
     calculateDistance: (lat1: number, lon1: number, lat2: number, lon2: number) => number
 ) => {
+    const [isProcessing, setIsProcessing] = useState(false);
     const ringingInterval = useRef<any>(null);
 
     const notifyCustomer = async (title: string, message: string) => {
@@ -56,74 +57,90 @@ export const useRideLifecycle = (
     const handleAcceptRide = async () => {
         if (!currentRide || !user) return;
 
-        // Optimistically mark as accepted in UI only AFTER db confirms it
-        // .select('id') returns the updated rows — if empty, the ride was already taken/cancelled
-        const { data: updatedRows, error } = await supabase
-            .from('rides')
-            .update({ status: 'accepted', driver_id: user.id })
-            .eq('id', currentRide.id)
-            .eq('status', 'searching') // Only update if still searching (race-safe)
-            .select('id');
+        setIsProcessing(true);
+        try {
+            // Optimistically mark as accepted in UI only AFTER db confirms it
+            // .select('id') returns the updated rows — if empty, the ride was already taken/cancelled
+            const { data: updatedRows, error } = await supabase
+                .from('rides')
+                .update({ status: 'accepted', driver_id: user.id })
+                .eq('id', currentRide.id)
+                .eq('status', 'searching') // Only update if still searching (race-safe)
+                .select('id');
 
-        if (error || !updatedRows || updatedRows.length === 0) {
-            // Ride was already taken by another driver or customer cancelled
-            console.warn("[handleAcceptRide] Ride unavailable (no rows updated or error):", error);
-            showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
+            if (error || !updatedRows || updatedRows.length === 0) {
+                // Ride was already taken by another driver or customer cancelled
+                console.warn("[handleAcceptRide] Ride unavailable (no rows updated or error):", error);
+                showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
 
-            // Remove stale ride from the queue and show the next one
-            const remaining = incomingRides.filter(r => r.id !== currentRide.id);
-            setIncomingRides(remaining);
-            if (remaining.length === 0) {
-                setCurrentRide(null);
-                setRideStatus('IDLE');
-                setIsDrawerExpanded(false);
-            } else {
-                setCurrentRide(remaining[0]);
-                setRideStatus('RINGING');
-                setCountdown(20);
+                // Remove stale ride from the queue and show the next one
+                const remaining = incomingRides.filter(r => r.id !== currentRide.id);
+                setIncomingRides(remaining);
+                if (remaining.length === 0) {
+                    setCurrentRide(null);
+                    setRideStatus('IDLE');
+                    setIsDrawerExpanded(false);
+                } else {
+                    setCurrentRide(remaining[0]);
+                    setRideStatus('RINGING');
+                    setCountdown(20);
+                }
+                return;
             }
-            return;
+
+            // DB confirmed — now update local UI state
+            setRideStatus('ACCEPTED');
+
+            // REJECT ALL OTHER PENDING REQUESTS IN QUEUE
+            const otherRideIds = incomingRides.filter(r => r.id !== currentRide.id).map(r => r.id);
+            if (otherRideIds.length > 0) {
+                setRejectedRideIds((prev: Set<string>) => {
+                    const newSet = new Set(prev);
+                    otherRideIds.forEach(id => newSet.add(id));
+                    return newSet;
+                });
+            }
+
+            pushNotification('Ride Accepted', `Navigating to pickup`, 'SYSTEM');
+            setIncomingRides([]); // Clear the queue since we accepted one
+        } finally {
+            setIsProcessing(false);
         }
-
-        // DB confirmed — now update local UI state
-        setRideStatus('ACCEPTED');
-
-        // REJECT ALL OTHER PENDING REQUESTS IN QUEUE
-        const otherRideIds = incomingRides.filter(r => r.id !== currentRide.id).map(r => r.id);
-        if (otherRideIds.length > 0) {
-            setRejectedRideIds((prev: Set<string>) => {
-                const newSet = new Set(prev);
-                otherRideIds.forEach(id => newSet.add(id));
-                return newSet;
-            });
-        }
-
-        pushNotification('Ride Accepted', `Navigating to pickup`, 'SYSTEM');
-        setIncomingRides([]); // Clear the queue since we accepted one
     };
 
     const handleArrivedAtPickup = async () => {
         if (!currentRide) return;
-        setRideStatus('ARRIVED');
-        await supabase.from('rides').update({ status: 'arrived' }).eq('id', currentRide.id);
-        pushNotification('You have Arrived', 'Notify the passenger you are here.', 'SYSTEM');
-        notifyCustomer('Driver Arrived', 'Your driver has arrived at the pickup location!');
+        setIsProcessing(true);
+        try {
+            setRideStatus('ARRIVED');
+            await supabase.from('rides').update({ status: 'arrived' }).eq('id', currentRide.id);
+            pushNotification('You have Arrived', 'Notify the passenger you are here.', 'SYSTEM');
+            notifyCustomer('Driver Arrived', 'Your driver has arrived at the pickup location!');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleStartRide = async () => {
         if (!currentRide) return;
-        setRideStatus('NAVIGATING');
-        setIsDrawerExpanded(false);
-        await supabase.from('rides').update({ status: 'in-progress' }).eq('id', currentRide.id);
-        pushNotification('Ride Started', 'Destination revealed. Drive safely!', 'RIDE');
-        notifyCustomer('Trip Started', 'Your driver has started the trip. Enjoy the ride!');
-        if (user && !profile.isOnline) {
-            await supabase.from('drivers').update({ is_online: true }).eq('id', user.id);
+        setIsProcessing(true);
+        try {
+            setRideStatus('NAVIGATING');
+            setIsDrawerExpanded(false);
+            await supabase.from('rides').update({ status: 'in-progress' }).eq('id', currentRide.id);
+            pushNotification('Ride Started', 'Destination revealed. Drive safely!', 'RIDE');
+            notifyCustomer('Trip Started', 'Your driver has started the trip. Enjoy the ride!');
+            if (user && !profile.isOnline) {
+                await supabase.from('drivers').update({ is_online: true }).eq('id', user.id);
+            }
+        } finally {
+            setIsProcessing(false);
         }
     };
 
     const handleCompleteRide = async (isAuto = false) => {
         if (!currentRide || !user) return;
+        setIsProcessing(true);
         try {
             setRideStatus('COMPLETED');
             setIsDrawerExpanded(true);
@@ -154,6 +171,8 @@ export const useRideLifecycle = (
         } catch (e: any) {
             console.error("Error completing ride via RPC:", e);
             pushNotification('Error', e.message || 'Failed to complete ride properly.', 'SYSTEM');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -327,6 +346,7 @@ export const useRideLifecycle = (
         submitRating,
         handleSkipRating,
         handleDeclineRide,
-        notifyCustomer
+        notifyCustomer,
+        isProcessing
     };
 };
