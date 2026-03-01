@@ -294,8 +294,8 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 .eq('batch_id', batchId)
                 .neq('status', 'cancelled');
 
-            // 3. Calculate Total Cash Upfront (sum of order item totals)
-            const totalCashUpfront = batchOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || '0'), 0) || parseFloat(order.total_amount);
+            // 3. Calculate Total Cash Upfront (sum of order item totals) - Round up to next figure
+            const totalCashUpfront = Math.ceil(batchOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || '0'), 0) || parseFloat(order.total_amount));
 
             // 4. Collect all pickup stops with names and addresses
             const merchants = batchOrders?.map(o => ({
@@ -338,7 +338,7 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             const pricePerStop = parseFloat(settings?.price_per_stop || '10');
             const distinctBusinesses = new Set(merchants.map(m => m.name));
             const stopSurcharge = Math.max(0, (distinctBusinesses.size - 1) * pricePerStop);
-            const finalPrice = basePrice + stopSurcharge;
+            const finalPrice = Math.ceil(basePrice + stopSurcharge);
 
             // 6. Check if a ride already exists for this batch
             const { data: existingRide } = await supabase
@@ -355,7 +355,9 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     stops,
                     merchants,
                     total_cash_upfront: totalCashUpfront,
-                    price: finalPrice
+                    price: finalPrice,
+                    type: 'MERCHANT_DELIVERY',
+                    ride_type: 'MERCHANT_DELIVERY'
                 }).eq('id', existingRide.id);
 
                 if (updateErr) throw updateErr;

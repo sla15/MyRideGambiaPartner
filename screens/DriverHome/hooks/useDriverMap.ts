@@ -27,6 +27,7 @@ export const useDriverMap = (
     const passengerMarker = useRef<any>(null);
     const directionsRenderer = useRef<any>(null);
     const directionsService = useRef<any>(null);
+    const infoWindowRef = useRef<any>(null);
 
     // Initialize Map and Services with Persistence
     useEffect(() => {
@@ -231,25 +232,48 @@ export const useDriverMap = (
                 passengerMarker.current.map = googleMapInstance.current;
             }
         } else if (currentRide && rideStatus === 'NAVIGATING' && currentRide.dropoff_lat && currentRide.dropoff_lng) {
-            // Task 4: Show dropoff marker during navigation
             const dropoffPos = { lat: currentRide.dropoff_lat, lng: currentRide.dropoff_lng };
+            const isMerchant = currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY';
 
             const renderDropoffContent = () => {
                 const wrapper = document.createElement('div');
-                wrapper.innerHTML = `
-                  <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
-                    <div style="width: 44px; height: 44px; background: white; border: 3px solid #EF4444; border-radius: 50%; overflow: hidden; position: relative; display: flex; items-center; justify-center;">
-                        <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-center;">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                          </svg>
+                const hasImage = !!currentRide.passengerImage;
+                const imgUrl = currentRide.passengerImage;
+
+                if (isMerchant) {
+                    wrapper.innerHTML = `
+                      <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); cursor: pointer;">
+                        <div style="width: 48px; height: 48px; background: white; border: 3px solid #10B981; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; ${!hasImage ? 'box-shadow: 0 0 15px #10B981;' : ''}">
+                           ${hasImage
+                            ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<div style="width: 20px; height: 20px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite;"></div>`
+                        }
                         </div>
-                    </div>
-                    <div style="width: 4px; height: 10px; background: #EF4444; border-radius: 2px;"></div>
-                    <div style="width: 12px; height: 12px; background: #EF4444; border-radius: 50%; margin-top: -6px; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"></div>
-                  </div>
-                `;
+                        <style>
+                          @keyframes pulse {
+                            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+                            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                          }
+                        </style>
+                      </div>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                      <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
+                        <div style="width: 44px; height: 44px; background: white; border: 3px solid #EF4444; border-radius: 50%; overflow: hidden; position: relative; display: flex; items-center; justify-center;">
+                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-center;">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                              </svg>
+                            </div>
+                        </div>
+                        <div style="width: 4px; height: 10px; background: #EF4444; border-radius: 2px;"></div>
+                        <div style="width: 12px; height: 12px; background: #EF4444; border-radius: 50%; margin-top: -6px; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"></div>
+                      </div>
+                    `;
+                }
                 return wrapper;
             };
 
@@ -258,13 +282,24 @@ export const useDriverMap = (
                     position: dropoffPos,
                     map: googleMapInstance.current,
                     content: renderDropoffContent(),
-                    zIndex: 90
+                    zIndex: 90,
+                    title: isMerchant ? currentRide.passengerName : 'Dropoff'
                 });
             } else {
                 passengerMarker.current.position = dropoffPos;
                 passengerMarker.current.content = renderDropoffContent();
                 passengerMarker.current.map = googleMapInstance.current;
+                passengerMarker.current.title = isMerchant ? currentRide.passengerName : 'Dropoff';
             }
+
+            // Task 4: Tap to show name
+            passengerMarker.current.addListener('click', () => {
+                if (infoWindowRef.current) infoWindowRef.current.close();
+                infoWindowRef.current = new google.maps.InfoWindow({
+                    content: `<div style="padding: 8px; font-weight: bold; color: #111; font-family: sans-serif;">${currentRide.passengerName}</div>`
+                });
+                infoWindowRef.current.open(googleMapInstance.current, passengerMarker.current);
+            });
 
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(new google.maps.LatLng(profile.currentLat, profile.currentLng));

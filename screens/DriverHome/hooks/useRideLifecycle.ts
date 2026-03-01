@@ -214,21 +214,6 @@ export const useRideLifecycle = (
         }
     };
 
-    const handleNextStop = async () => {
-        if (!currentRide) return;
-        const nextIndex = (currentRide.current_stop_index || 0) + 1;
-        setRideStatus('ACCEPTED'); // Move back to accepted (navigating to next)
-
-        const { error } = await supabase.from('rides').update({
-            status: 'accepted',
-            current_stop_index: nextIndex
-        }).eq('id', currentRide.id);
-
-        if (!error) {
-            setCurrentRide(prev => prev ? { ...prev, current_stop_index: nextIndex } : null);
-            pushNotification('Next Pickup', `Heading to the next shop`, 'SYSTEM');
-        }
-    };
 
     const handleCollectPayment = () => setShowRatingModal(true);
 
@@ -342,7 +327,6 @@ export const useRideLifecycle = (
         submitRating,
         handleSkipRating,
         handleDeclineRide,
-        handleNextStop,
         notifyCustomer
     };
 };

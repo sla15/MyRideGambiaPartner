@@ -149,7 +149,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                     {rideType === 'DELIVERY' && currentRide.total_cash_upfront ? (
                                         <div className="mb-2 text-right">
                                             <div className="text-orange-500 text-sm font-black uppercase tracking-widest leading-none">Cash Needed</div>
-                                            <div className="text-orange-600 dark:text-orange-400 text-2xl font-black">D{currentRide.total_cash_upfront}</div>
+                                            <div className="text-orange-600 dark:text-orange-400 text-2xl font-black">D{Math.ceil(currentRide.total_cash_upfront)}</div>
                                         </div>
                                     ) : null}
                                     <div className="flex items-center gap-4">
@@ -166,9 +166,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                 </div>
                             ) : rideStatus === 'COMPLETED' ? (
                                 <div className="animate-in zoom-in duration-300 flex flex-col items-end">
-                                    <div className="text-[#00E39A] text-4xl font-extrabold tracking-tighter">
-                                        D{currentRide.price}
-                                    </div>
+                                    D{Math.ceil(currentRide.price)}
                                     <div className="text-gray-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                                         <CheckCircle size={10} className="text-[#00E39A]" />
                                         {rideType === 'DELIVERY' ? 'Delivery Complete' : 'Ride Complete'}
@@ -342,9 +340,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                         className="w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest"
                                     >
                                         <MapPin size={24} />
-                                        {rideType === 'MERCHANT_DELIVERY' && currentRide.merchants && currentRide.merchants.length > 0
-                                            ? `Arrived at ${currentRide.merchants[currentRide.current_stop_index || 0]?.name || 'Shop'}`
-                                            : 'I Have Arrived'}
+                                        {rideType === 'MERCHANT_DELIVERY' ? 'Arrived at Pickup' : 'I Have Arrived'}
                                     </button>
 
                                     {/* Contact Buttons */}
@@ -375,21 +371,12 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
 
                             {rideStatus === 'ARRIVED' && (
                                 <div className="space-y-3">
-                                    {rideType === 'MERCHANT_DELIVERY' && currentRide.merchants && (currentRide.current_stop_index || 0) < currentRide.merchants.length - 1 ? (
-                                        <button
-                                            onClick={onNextStop}
-                                            className="w-full bg-orange-500 text-white h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
-                                        >
-                                            <Check size={22} /> NEXT SHOP
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={onStartRide}
-                                            className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
-                                        >
-                                            <Play size={22} fill="currentColor" /> {rideType === 'MERCHANT_DELIVERY' ? 'START DELIVERY' : 'START TRIP'}
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={onStartRide}
+                                        className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
+                                    >
+                                        <Play size={22} fill="currentColor" /> {rideType === 'MERCHANT_DELIVERY' ? 'START DELIVERY' : 'START TRIP'}
+                                    </button>
 
                                     {/* Contact Buttons */}
                                     <div className="grid grid-cols-2 gap-3 mb-2">
@@ -454,7 +441,22 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                     )}
 
                                     <div className="space-y-3">
-                                        {/* Contact Buttons Removed from NAVIGATING state per user request */}
+                                        {rideType === 'MERCHANT_DELIVERY' && (
+                                            <div className="grid grid-cols-2 gap-3 mb-2">
+                                                <a
+                                                    href={`tel:${currentRide?.passengerPhone}`}
+                                                    className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
+                                                >
+                                                    <Phone size={18} fill="currentColor" /> CALL
+                                                </a>
+                                                <a
+                                                    href={`https://wa.me/${currentRide?.passengerPhone}`}
+                                                    className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
+                                                >
+                                                    <MessageCircle size={18} fill="currentColor" /> WHATSAPP
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <SlideButton
