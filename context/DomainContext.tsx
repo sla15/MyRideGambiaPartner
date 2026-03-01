@@ -316,7 +316,7 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 phone: o.businesses?.business_phone || ''
             })) || [];
 
-            const stops = merchants.map(m => ({
+            const stops = merchants.map(m => JSON.stringify({
                 business_id: m.id,
                 business_name: m.name,
                 business_address: m.address,

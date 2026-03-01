@@ -292,16 +292,27 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         });
                         merchants = Object.values(mGrouped);
                     }
-                } else if (activeRide.stops) {
-                    // Fallback for single orders: use the stops column which is JSONB
+                } else if (activeRide.stops && (activeRide.type === 'MERCHANT_DELIVERY' || activeRide.ride_type === 'MERCHANT_DELIVERY')) {
+                    // Fallback for single orders: use the stops column which is JSONB or text[]
                     const stopsData = typeof activeRide.stops === 'string' ? JSON.parse(activeRide.stops) : activeRide.stops;
                     if (Array.isArray(stopsData)) {
-                        merchants = stopsData.map((s: any) => ({
-                            name: s.business_name || s.name || 'Shop',
-                            phone: s.business_phone || s.phone || '',
-                            address: s.business_address || s.address || '',
-                            amount: s.estimated_cash || 0
-                        }));
+                        merchants = stopsData.map((s: any) => {
+                            let parsed = s;
+                            if (typeof s === 'string') {
+                                try {
+                                    parsed = JSON.parse(s);
+                                } catch (e) {
+                                    // It's just a regular address string from older rides
+                                    parsed = { business_address: s };
+                                }
+                            }
+                            return {
+                                name: parsed?.business_name || parsed?.name || 'Shop',
+                                phone: parsed?.business_phone || parsed?.phone || '',
+                                address: parsed?.business_address || parsed?.address || '',
+                                amount: parsed?.estimated_cash || 0
+                            };
+                        });
                     }
                 }
 
@@ -702,16 +713,27 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 });
                                 merchants = Object.values(mGrouped);
                             }
-                        } else if (newRide.stops) {
+                        } else if (newRide.stops && (newRide.type === 'MERCHANT_DELIVERY' || newRide.ride_type === 'MERCHANT_DELIVERY')) {
                             // Fallback for single orders: use the stops column
                             const stopsData = typeof newRide.stops === 'string' ? JSON.parse(newRide.stops) : newRide.stops;
                             if (Array.isArray(stopsData)) {
-                                merchants = stopsData.map((s: any) => ({
-                                    name: s.business_name || s.name || 'Shop',
-                                    phone: s.business_phone || s.phone || '',
-                                    address: s.business_address || s.address || '',
-                                    amount: s.estimated_cash || 0
-                                }));
+                                merchants = stopsData.map((s: any) => {
+                                    let parsed = s;
+                                    if (typeof s === 'string') {
+                                        try {
+                                            parsed = JSON.parse(s);
+                                        } catch (e) {
+                                            // It's just a regular address string
+                                            parsed = { business_address: s };
+                                        }
+                                    }
+                                    return {
+                                        name: parsed?.business_name || parsed?.name || 'Shop',
+                                        phone: parsed?.business_phone || parsed?.phone || '',
+                                        address: parsed?.business_address || parsed?.address || '',
+                                        amount: parsed?.estimated_cash || 0
+                                    };
+                                });
                             }
                         }
 
