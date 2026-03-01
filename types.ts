@@ -41,8 +41,9 @@ export interface RideRequest {
   pickup_lat?: number;
   pickup_lng?: number;
   stops?: string[];
-  type?: 'PASSENGER' | 'DELIVERY';
+  type?: 'PASSENGER' | 'DELIVERY' | 'MERCHANT_DELIVERY';
   total_cash_upfront?: number;
+  current_stop_index?: number;
   merchantPhone?: string;
   businessName?: string;
   merchants?: {

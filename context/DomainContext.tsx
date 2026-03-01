@@ -297,10 +297,15 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             // 3. Calculate Total Cash Upfront (sum of order item totals)
             const totalCashUpfront = batchOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || '0'), 0) || parseFloat(order.total_amount);
 
-            // 4. Collect all pickup stops (unique business items)
-            // We use business_id to ensure D10 surcharge is applied per distinct business stop
-            const uniqueBusinessIds = Array.from(new Set(batchOrders?.map(o => o.business_id).filter(Boolean)));
-            const stops = Array.from(new Set(batchOrders?.map(o => o.businesses?.location_address).filter(Boolean))) as string[];
+            // 4. Collect all pickup stops with names and addresses
+            const merchants = batchOrders?.map(o => ({
+                name: o.businesses?.name || 'Shop',
+                address: o.businesses?.location_address || '',
+                amount: parseFloat(o.total_amount || '0'),
+                phone: o.businesses?.payment_phone || ''
+            })) || [];
+
+            const stops = merchants.map(m => m.address);
 
             // 5. Fetch Settings for Fee
             const { data: settings } = await supabase.from('app_settings').select('*').limit(1).single();
@@ -331,7 +336,8 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
             // Multi-stop surcharge: D10 for every additional stop beyond the first
             const pricePerStop = parseFloat(settings?.price_per_stop || '10');
-            const stopSurcharge = Math.max(0, (uniqueBusinessIds.length - 1) * pricePerStop);
+            const distinctBusinesses = new Set(merchants.map(m => m.name));
+            const stopSurcharge = Math.max(0, (distinctBusinesses.size - 1) * pricePerStop);
             const finalPrice = basePrice + stopSurcharge;
 
             // 6. Check if a ride already exists for this batch
@@ -347,6 +353,7 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 // Update existing ride with new stops, cash total, and updated price
                 const { error: updateErr } = await supabase.from('rides').update({
                     stops,
+                    merchants,
                     total_cash_upfront: totalCashUpfront,
                     price: finalPrice
                 }).eq('id', existingRide.id);
@@ -379,11 +386,13 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 dropoff_address: order.delivery_address || 'Customer Location',
                 price: finalPrice,
                 status: 'searching',
-                type: 'DELIVERY',
+                type: 'MERCHANT_DELIVERY',
                 requested_vehicle_type: 'scooter',
-                ride_type: 'DELIVERY',
+                ride_type: 'MERCHANT_DELIVERY',
                 stops: stops,
-                total_cash_upfront: totalCashUpfront
+                merchants: merchants,
+                total_cash_upfront: totalCashUpfront,
+                current_stop_index: 0
             });
 
             if (rideErr) throw rideErr;

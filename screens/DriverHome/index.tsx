@@ -76,6 +76,7 @@ export const DriverHome: React.FC = () => {
         submitRating,
         handleSkipRating,
         handleDeclineRide,
+        handleNextStop,
         notifyCustomer
     } = useRideLifecycle(
         user,
@@ -252,6 +253,7 @@ export const DriverHome: React.FC = () => {
                     onComplete={handleCompleteRide}
                     onChat={() => openChat({ id: `chat-${currentRide.id}`, participantName: currentRide.passengerName, contextId: currentRide.id })}
                     onCollectPayment={handleCollectPayment}
+                    onNextStop={handleNextStop}
                     countdown={countdown}
                     rideType={currentRide.type as any}
                     queueCount={incomingRides.length}

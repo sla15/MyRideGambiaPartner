@@ -17,8 +17,9 @@ interface RideDrawerProps {
     onComplete: () => void;
     onChat: () => void;
     onCollectPayment: () => void;
+    onNextStop?: () => void;
     countdown: number;
-    rideType?: 'PASSENGER' | 'DELIVERY';
+    rideType?: 'PASSENGER' | 'DELIVERY' | 'MERCHANT_DELIVERY';
     queueCount?: number;
     currentLat?: number;
     currentLng?: number;
@@ -37,6 +38,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
     onComplete,
     onChat,
     onCollectPayment,
+    onNextStop,
     countdown,
     rideType = 'PASSENGER',
     queueCount = 1,
@@ -189,24 +191,32 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
 
                         {/* Pickup(s) */}
                         {currentRide.merchants && currentRide.merchants.length > 0 ? (
-                            currentRide.merchants.map((merchant, index) => (
-                                <div key={index} className="flex gap-4 mb-6 relative z-10">
-                                    <div className="mt-1 w-4 h-4 rounded-full border-[3px] border-[#00E39A] bg-white dark:bg-[#1C1C1E] shrink-0 shadow-[0_0_10px_rgba(0,227,154,0.4)]"></div>
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[#00E39A] text-[10px] font-black uppercase tracking-widest">PICKUP {currentRide.merchants!.length > 1 ? index + 1 : ''}</span>
-                                                {index === 0 && <span className="bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 text-[10px] px-1.5 py-0.5 rounded">{currentRide.pickupDistance} Away</span>}
+                            currentRide.merchants.map((merchant, index) => {
+                                const isCurrentStop = (currentRide.current_stop_index || 0) === index;
+                                const isCompleted = (currentRide.current_stop_index || 0) > index;
+                                return (
+                                    <div key={index} className={`flex gap-4 mb-6 relative z-10 ${isCompleted ? 'opacity-40' : ''}`}>
+                                        <div className={`mt-1 w-4 h-4 rounded-full border-[3px] ${isCurrentStop ? 'border-orange-500 animate-pulse' : 'border-[#00E39A]'} bg-white dark:bg-[#1C1C1E] shrink-0 shadow-[0_0_10px_rgba(0,227,154,0.4)]`}></div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <span className={`${isCurrentStop ? 'text-orange-500' : 'text-[#00E39A]'} text-[10px] font-black uppercase tracking-widest`}>
+                                                        PICKUP {currentRide.merchants!.length > 1 ? index + 1 : ''}
+                                                        {isCurrentStop && ' (CURRENT)'}
+                                                        {isCompleted && ' (DONE)'}
+                                                    </span>
+                                                    {index === 0 && <span className="bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 text-[10px] px-1.5 py-0.5 rounded">{currentRide.pickupDistance} Away</span>}
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-orange-500 text-[9px] font-black uppercase tracking-widest">D{merchant.amount}</span>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-orange-500 text-[9px] font-black uppercase tracking-widest">D{merchant.amount}</span>
-                                            </div>
+                                            <h4 className="text-gray-900 dark:text-white font-bold text-lg leading-tight">{merchant.name}</h4>
+                                            <p className="text-gray-500 text-xs truncate max-w-[200px]">{merchant.address}</p>
                                         </div>
-                                        <h4 className="text-gray-900 dark:text-white font-bold text-lg leading-tight">{merchant.name}</h4>
-                                        <p className="text-gray-500 text-xs truncate max-w-[200px]">{merchant.address}</p>
                                     </div>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : currentRide.stops && currentRide.stops.length > 0 ? (
                             currentRide.stops.map((stop, index) => (
                                 <div key={index} className="flex gap-4 mb-6 relative z-10">
@@ -331,19 +341,22 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                         onClick={onArrived}
                                         className="w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest"
                                     >
-                                        <MapPin size={24} /> I Have Arrived
+                                        <MapPin size={24} />
+                                        {rideType === 'MERCHANT_DELIVERY' && currentRide.merchants && currentRide.merchants.length > 0
+                                            ? `Arrived at ${currentRide.merchants[currentRide.current_stop_index || 0]?.name || 'Shop'}`
+                                            : 'I Have Arrived'}
                                     </button>
 
                                     {/* Contact Buttons */}
                                     <div className="grid grid-cols-2 gap-3 mb-2">
                                         <a
-                                            href={`tel:${currentRide.passengerPhone}`}
+                                            href={`tel:${rideType === 'MERCHANT_DELIVERY' && currentRide.merchants ? currentRide.merchants[currentRide.current_stop_index || 0]?.phone : currentRide.passengerPhone}`}
                                             className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
                                         >
                                             <Phone size={18} fill="currentColor" /> CALL
                                         </a>
                                         <a
-                                            href={`sms:${currentRide.passengerPhone}`}
+                                            href={`sms:${rideType === 'MERCHANT_DELIVERY' && currentRide.merchants ? currentRide.merchants[currentRide.current_stop_index || 0]?.phone : currentRide.passengerPhone}`}
                                             className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
                                         >
                                             <MessageCircle size={18} fill="currentColor" /> MESSAGE
@@ -362,23 +375,32 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
 
                             {rideStatus === 'ARRIVED' && (
                                 <div className="space-y-3">
-                                    <button
-                                        onClick={onStartRide}
-                                        className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
-                                    >
-                                        <Play size={22} fill="currentColor" /> START TRIP
-                                    </button>
+                                    {rideType === 'MERCHANT_DELIVERY' && currentRide.merchants && (currentRide.current_stop_index || 0) < currentRide.merchants.length - 1 ? (
+                                        <button
+                                            onClick={onNextStop}
+                                            className="w-full bg-orange-500 text-white h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
+                                        >
+                                            <Check size={22} /> NEXT SHOP
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={onStartRide}
+                                            className="w-full bg-[#00E39A] text-black h-14 rounded-2xl font-beta active:scale-95 transition-transform flex items-center justify-center gap-3 shadow-lg uppercase tracking-widest font-black"
+                                        >
+                                            <Play size={22} fill="currentColor" /> {rideType === 'MERCHANT_DELIVERY' ? 'START DELIVERY' : 'START TRIP'}
+                                        </button>
+                                    )}
 
                                     {/* Contact Buttons */}
                                     <div className="grid grid-cols-2 gap-3 mb-2">
                                         <a
-                                            href={`tel:${currentRide.passengerPhone}`}
+                                            href={`tel:${rideType === 'MERCHANT_DELIVERY' && currentRide.merchants ? currentRide.merchants[currentRide.current_stop_index || 0]?.phone : currentRide.passengerPhone}`}
                                             className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
                                         >
                                             <Phone size={18} fill="currentColor" /> CALL
                                         </a>
                                         <a
-                                            href={`sms:${currentRide.passengerPhone}`}
+                                            href={`sms:${rideType === 'MERCHANT_DELIVERY' && currentRide.merchants ? currentRide.merchants[currentRide.current_stop_index || 0]?.phone : currentRide.passengerPhone}`}
                                             className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-white h-14 rounded-2xl font-black flex items-center justify-center gap-2 border border-gray-100 dark:border-white/5 active:scale-95 transition-transform"
                                         >
                                             <MessageCircle size={18} fill="currentColor" /> MESSAGE
