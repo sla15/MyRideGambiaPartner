@@ -31,6 +31,18 @@ export const MerchantOrders: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isProcessing, setIsProcessing] = useState<{ id: string, action: string } | null>(null);
 
+    // Sync selected order with real-time merchantOrders list
+    React.useEffect(() => {
+        if (selectedOrder) {
+            const updated = merchantOrders.find(o => o.id === selectedOrder.id);
+            if (!updated) {
+                setSelectedOrder(null);
+            } else if (updated.status !== selectedOrder.status || updated.items.length !== selectedOrder.items.length) {
+                setSelectedOrder(updated);
+            }
+        }
+    }, [merchantOrders, selectedOrder]);
+
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
         setIsProcessing({ id: orderId, action: newStatus });
         try {
