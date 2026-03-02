@@ -743,9 +743,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 if (!['ready', 'delivering', 'arrived', 'completed'].includes(bo.status)) {
                                     mGrouped[bo.business_id].isReady = false;
                                 }
-                                if (!['ready', 'arrived', 'delivering'].includes(bo.status)) {
-                                    mGrouped[bo.business_id].isReady = false;
-                                }
                             });
                             merchants = Object.values(mGrouped);
                         }
@@ -765,7 +762,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                     lat: parsed?.lat,
                                     lng: parsed?.lng,
                                     amount: parsed?.estimated_cash || 0,
-                                    isReady: ['ready', 'arrived', 'delivering', 'completed'].includes(parsed?.status || 'ready')
+                                    isReady: ['ready', 'arrived', 'delivering', 'completed'].includes(parsed?.status || 'preparing')
                                 };
                             });
                         }

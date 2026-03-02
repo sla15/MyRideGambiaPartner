@@ -313,7 +313,8 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 name: o.businesses?.name || 'Shop',
                 address: o.businesses?.location_address || '',
                 amount: parseFloat(o.total_amount || '0'),
-                phone: o.businesses?.payment_phone || o.businesses?.phone || ''
+                phone: o.businesses?.payment_phone || o.businesses?.phone || '',
+                status: o.status
             })) || [];
 
             const stops = merchants.map(m => ({
@@ -321,7 +322,8 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 business_name: m.name,
                 business_address: m.address,
                 business_phone: m.phone,
-                estimated_cash: m.amount
+                estimated_cash: m.amount,
+                status: m.status
             }));
 
             // 5. Fetch Settings for Fee
