@@ -187,29 +187,50 @@ export const useDriverMap = (
         const shouldShowPassenger = currentRide && (rideStatus === 'ACCEPTED' || rideStatus === 'ARRIVED');
         if (shouldShowPassenger && currentRide.pickup_lat && currentRide.pickup_lng) {
             const passengerPos = { lat: currentRide.pickup_lat, lng: currentRide.pickup_lng };
+            const isMerchant = currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY';
 
             const renderPassengerContent = () => {
                 const wrapper = document.createElement('div');
-                const hasImage = !!currentRide.passengerImage;
-                const imgUrl = currentRide.passengerImage;
+                const hasImage = isMerchant ? !!currentRide.merchants?.[0]?.image : !!currentRide.passengerImage;
+                const imgUrl = isMerchant ? currentRide.merchants?.[0]?.image : currentRide.passengerImage;
 
-                wrapper.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
-            <div style="width: 44px; height: 44px; background: white; border: 3px solid #10B981; border-radius: 50%; overflow: hidden; position: relative; display: flex; items-center; justify-center;">
-               ${hasImage
-                        ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
-                        : `<div style="width: 100%; height: 100%; background: #10B981; display: flex; align-items: center; justify-center;">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-                        <circle cx="12" cy="10" r="3"></circle>
-                      </svg>
-                    </div>`
-                    }
-            </div>
-            <div style="width: 4px; height: 10px; background: #10B981; border-radius: 2px;"></div>
-            <div style="width: 12px; height: 12px; background: #10B981; border-radius: 50%; margin-top: -6px; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"></div>
-          </div>
-        `;
+                if (isMerchant) {
+                    wrapper.innerHTML = `
+                      <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); cursor: pointer;">
+                        <div style="width: 48px; height: 48px; background: white; border: 3px solid #10B981; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; ${!hasImage ? 'box-shadow: 0 0 15px #10B981;' : ''}">
+                           ${hasImage
+                            ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<div style="width: 20px; height: 20px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite;"></div>`
+                        }
+                        </div>
+                        <style>
+                          @keyframes pulse {
+                            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+                            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+                            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                          }
+                        </style>
+                      </div>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                      <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
+                        <div style="width: 44px; height: 44px; background: white; border: 3px solid #10B981; border-radius: 50%; overflow: hidden; position: relative; display: flex; items-center; justify-center;">
+                           ${hasImage
+                            ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<div style="width: 100%; height: 100%; background: #10B981; display: flex; align-items: center; justify-center;">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                              </svg>
+                            </div>`
+                        }
+                        </div>
+                        <div style="width: 4px; height: 10px; background: #10B981; border-radius: 2px;"></div>
+                        <div style="width: 12px; height: 12px; background: #10B981; border-radius: 50%; margin-top: -6px; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"></div>
+                      </div>
+                    `;
+                }
                 return wrapper;
             };
 
@@ -242,19 +263,20 @@ export const useDriverMap = (
                 const imgUrl = currentRide.passengerImage;
 
                 if (isMerchant) {
+                    // For Merchant Delivery, the dropoff is the customer
                     wrapper.innerHTML = `
                       <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); cursor: pointer;">
-                        <div style="width: 48px; height: 48px; background: white; border: 3px solid #10B981; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; ${!hasImage ? 'box-shadow: 0 0 15px #10B981;' : ''}">
+                        <div style="width: 48px; height: 48px; background: white; border: 3px solid #3B82F6; border-radius: 50%; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; ${!hasImage ? 'box-shadow: 0 0 15px #3B82F6;' : ''}">
                            ${hasImage
                             ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
-                            : `<div style="width: 20px; height: 20px; background: #10B981; border-radius: 50%; animation: pulse 2s infinite;"></div>`
+                            : `<div style="width: 20px; height: 20px; background: #3B82F6; border-radius: 50%; animation: pulseBlue 2s infinite;"></div>`
                         }
                         </div>
                         <style>
-                          @keyframes pulse {
-                            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-                            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-                            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                          @keyframes pulseBlue {
+                            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+                            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+                            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
                           }
                         </style>
                       </div>
@@ -263,12 +285,15 @@ export const useDriverMap = (
                     wrapper.innerHTML = `
                       <div style="display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));">
                         <div style="width: 44px; height: 44px; background: white; border: 3px solid #EF4444; border-radius: 50%; overflow: hidden; position: relative; display: flex; items-center; justify-center;">
-                            <div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-center;">
+                           ${hasImage
+                            ? `<img src="${imgUrl}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                            : `<div style="width: 100%; height: 100%; background: #EF4444; display: flex; align-items: center; justify-center;">
                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
                                 <circle cx="12" cy="10" r="3"></circle>
                               </svg>
-                            </div>
+                            </div>`
+                        }
                         </div>
                         <div style="width: 4px; height: 10px; background: #EF4444; border-radius: 2px;"></div>
                         <div style="width: 12px; height: 12px; background: #EF4444; border-radius: 50%; margin-top: -6px; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.2);"></div>

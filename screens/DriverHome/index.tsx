@@ -228,21 +228,35 @@ export const DriverHome: React.FC = () => {
                             }
                         }
 
+                        const isMerchant = currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY';
                         try {
-                            const { data, error } = await supabase.rpc('cancel_ride_driver', {
-                                p_ride_id: currentRide.id,
-                                p_driver_id: user?.id
-                            });
+                            if (isMerchant) {
+                                // For merchant deliveries, slide to cancel just releases the driver but keeps request alive
+                                const { error } = await supabase
+                                    .from('rides')
+                                    .update({ status: 'searching', driver_id: null })
+                                    .eq('id', currentRide.id);
+                                if (error) throw error;
 
-                            if (error) throw error;
-                            if (data && !data.success) throw new Error(data.error || 'Failed to cancel');
+                                if (currentRide.batch_id) {
+                                    await supabase.from('orders').update({ status: 'ready' }).eq('batch_id', currentRide.batch_id);
+                                }
+                            } else {
+                                const { data, error } = await supabase.rpc('cancel_ride_driver', {
+                                    p_ride_id: currentRide.id,
+                                    p_driver_id: user?.id
+                                });
+
+                                if (error) throw error;
+                                if (data && !data.success) throw new Error(data.error || 'Failed to cancel');
+                            }
                         } catch (error: any) {
                             console.error('Cancellation error:', error);
                             pushNotification('Sync Error', 'Failed to cancel trip.', 'SYSTEM');
                             return;
                         }
-                        const isDelivery = currentRide.type === 'DELIVERY' || currentRide.type === 'MERCHANT_DELIVERY';
-                        notifyCustomer(isDelivery ? 'Delivery Cancelled' : 'Ride Cancelled', 'Driver had to cancel.');
+                        const isDelivery = currentRide.type === 'DELIVERY' || isMerchant;
+                        notifyCustomer(isDelivery ? 'Delivery Update' : 'Ride Cancelled', isMerchant ? 'Driver unassigned. Searching for a new one.' : 'Driver had to cancel.');
                         pushNotification(isDelivery ? 'Delivery Cancelled' : 'Trip Cancelled', 'Status changed to cancelled.', 'SYSTEM');
                         setCurrentRide(null);
                         setIncomingRides([]);

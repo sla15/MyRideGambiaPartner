@@ -91,6 +91,15 @@ export const useRideLifecycle = (
             // DB confirmed — now update local UI state
             setRideStatus('ACCEPTED');
 
+            // If it's a merchant delivery, sync the associated orders to "delivering"
+            if (currentRide.batch_id && (currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY')) {
+                const { error: batchErr } = await supabase
+                    .from('orders')
+                    .update({ status: 'delivering' })
+                    .eq('batch_id', currentRide.batch_id);
+                if (batchErr) console.warn("Could not sync batch orders status:", batchErr);
+            }
+
             // REJECT ALL OTHER PENDING REQUESTS IN QUEUE
             const otherRideIds = incomingRides.filter(r => r.id !== currentRide.id).map(r => r.id);
             if (otherRideIds.length > 0) {

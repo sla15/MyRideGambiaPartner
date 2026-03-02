@@ -29,10 +29,10 @@ export const MerchantOrders: React.FC = () => {
     const { merchantOrders, updateOrderStatus, openChat, pushNotification, createDeliveryRequest, deleteOrder } = useApp();
     const [filter, setFilter] = useState<OrderStatus | 'ALL'>('ALL');
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    const [isProcessing, setIsProcessing] = useState<{ id: string, action: string } | null>(null);
 
     const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-        setIsProcessing(orderId);
+        setIsProcessing({ id: orderId, action: newStatus });
         try {
             const success = await updateOrderStatus(orderId, newStatus);
             if (success) {
@@ -58,7 +58,7 @@ export const MerchantOrders: React.FC = () => {
 
     const handleRejectOrder = async (orderId: string) => {
         if (window.confirm('Are you sure you want to reject this order?')) {
-            setIsProcessing(orderId);
+            setIsProcessing({ id: orderId, action: 'reject' });
             try {
                 const success = await updateOrderStatus(orderId, 'cancelled');
                 if (success) {
@@ -210,16 +210,15 @@ export const MerchantOrders: React.FC = () => {
                                 </a>
                             </div>
 
-                            {/* Actions Block */}
                             <div className="space-y-3">
                                 {selectedOrder.status === 'pending' && (
                                     <div className="flex gap-2">
                                         <button
-                                            disabled={isProcessing === selectedOrder.id}
+                                            disabled={isProcessing?.id === selectedOrder.id}
                                             onClick={() => handleStatusChange(selectedOrder.id, 'accepted')}
-                                            className={`flex-1 h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                            className={`flex-1 h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'accepted' ? 'opacity-70' : ''}`}
                                         >
-                                            {isProcessing === selectedOrder.id ? (
+                                            {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'accepted' ? (
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                                                     Processing...
@@ -230,11 +229,11 @@ export const MerchantOrders: React.FC = () => {
                                 )}
                                 {selectedOrder.status === 'accepted' && (
                                     <button
-                                        disabled={isProcessing === selectedOrder.id}
+                                        disabled={isProcessing?.id === selectedOrder.id}
                                         onClick={() => handleStatusChange(selectedOrder.id, 'preparing')}
-                                        className={`w-full h-16 bg-black dark:bg-white text-white dark:text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        className={`w-full h-16 bg-black dark:bg-white text-white dark:text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'preparing' ? 'opacity-70' : ''}`}
                                     >
-                                        {isProcessing === selectedOrder.id ? (
+                                        {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'preparing' ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-current/20 border-t-current rounded-full animate-spin" />
                                                 Processing...
@@ -244,11 +243,11 @@ export const MerchantOrders: React.FC = () => {
                                 )}
                                 {selectedOrder.status === 'preparing' && (
                                     <button
-                                        disabled={isProcessing === selectedOrder.id}
+                                        disabled={isProcessing?.id === selectedOrder.id}
                                         onClick={() => handleStatusChange(selectedOrder.id, 'ready')}
-                                        className={`w-full h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        className={`w-full h-16 bg-[#00E39A] text-black font-black rounded-2xl text-lg shadow-lg flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'ready' ? 'opacity-70' : ''}`}
                                     >
-                                        {isProcessing === selectedOrder.id ? (
+                                        {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'ready' ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                                                 Processing...
@@ -276,11 +275,11 @@ export const MerchantOrders: React.FC = () => {
                                 )}
                                 {['delivering', 'arrived', 'ready', 'preparing', 'accepted'].includes(selectedOrder.status) && (
                                     <button
-                                        disabled={isProcessing === selectedOrder.id}
+                                        disabled={isProcessing?.id === selectedOrder.id}
                                         onClick={() => handleStatusChange(selectedOrder.id, 'completed')}
-                                        className={`w-full h-16 bg-green-600 dark:bg-green-500 text-white font-black rounded-2xl text-lg shadow-lg mt-2 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        className={`w-full h-16 bg-green-600 dark:bg-green-500 text-white font-black rounded-2xl text-lg shadow-lg mt-2 flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'completed' ? 'opacity-70' : ''}`}
                                     >
-                                        {isProcessing === selectedOrder.id ? (
+                                        {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'completed' ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                                                 Syncing...
@@ -290,11 +289,11 @@ export const MerchantOrders: React.FC = () => {
                                 )}
                                 {['pending', 'accepted', 'preparing', 'ready', 'arrived'].includes(selectedOrder.status) && (
                                     <button
-                                        disabled={isProcessing === selectedOrder.id}
+                                        disabled={isProcessing?.id === selectedOrder.id}
                                         onClick={() => handleRejectOrder(selectedOrder.id)}
-                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 mt-2 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 mt-2 flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'reject' ? 'opacity-70' : ''}`}
                                     >
-                                        {isProcessing === selectedOrder.id ? (
+                                        {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'reject' ? (
                                             <div className="flex items-center gap-2">
                                                 <div className="w-5 h-5 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin" />
                                                 Cancelling...
@@ -304,10 +303,10 @@ export const MerchantOrders: React.FC = () => {
                                 )}
                                 {['completed', 'cancelled'].includes(selectedOrder.status) && (
                                     <button
-                                        disabled={isProcessing === selectedOrder.id}
+                                        disabled={isProcessing?.id === selectedOrder.id}
                                         onClick={async () => {
                                             if (window.confirm('Remove this order from your view? (It will be hidden but remain in our records)')) {
-                                                setIsProcessing(selectedOrder.id);
+                                                setIsProcessing({ id: selectedOrder.id, action: 'delete' });
                                                 try {
                                                     await deleteOrder(selectedOrder.id);
                                                     setSelectedOrder(null);
@@ -316,9 +315,9 @@ export const MerchantOrders: React.FC = () => {
                                                 }
                                             }
                                         }}
-                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 flex items-center justify-center ${isProcessing === selectedOrder.id ? 'opacity-70' : ''}`}
+                                        className={`w-full h-16 bg-red-50 dark:bg-red-900/10 text-red-500 font-bold rounded-2xl border border-red-100 dark:border-red-900/30 flex items-center justify-center ${isProcessing?.id === selectedOrder.id && isProcessing?.action === 'delete' ? 'opacity-70' : ''}`}
                                     >
-                                        {isProcessing === selectedOrder.id ? 'Removing...' : 'Remove from View'}
+                                        {isProcessing?.id === selectedOrder.id && isProcessing?.action === 'delete' ? 'Removing...' : 'Remove from View'}
                                     </button>
                                 )}
                             </div>
