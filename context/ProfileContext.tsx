@@ -286,7 +286,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 if (activeRide.batch_id) {
                     const { data: batchOrders } = await supabase
                         .from('orders')
-                        .select('total_amount, business_id, businesses(name, business_phone, payment_phone, location_address, logo_url)')
+                        .select('total_amount, business_id, businesses(name, payment_phone, location_address, image_url)')
                         .eq('batch_id', activeRide.batch_id)
                         .in('status', ['accepted', 'preparing', 'ready', 'delivering']);
 
@@ -297,9 +297,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                             if (!mGrouped[bo.business_id]) {
                                 mGrouped[bo.business_id] = {
                                     name: b?.name || 'Shop',
-                                    phone: b?.business_phone || b?.payment_phone || '',
+                                    phone: b?.payment_phone || '',
                                     address: b?.location_address || '',
-                                    image: b?.logo_url || null,
+                                    image: b?.image_url || null,
                                     amount: 0
                                 };
                             }
@@ -324,7 +324,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                             }
                             return {
                                 name: parsed?.business_name || parsed?.name || 'Shop',
-                                phone: parsed?.business_phone || parsed?.phone || parsed?.payment_phone || '',
+                                phone: parsed?.payment_phone || parsed?.phone || '',
                                 address: parsed?.business_address || parsed?.address || '',
                                 amount: parsed?.estimated_cash || 0
                             };
@@ -718,9 +718,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     if (newRide.batch_id) {
                         const { data: batchOrders } = await supabase
                             .from('orders')
-                            .select('status, total_amount, business_id, businesses(name, payment_phone, location_address, logo_url, lat, lng)')
+                            .select('status, total_amount, business_id, businesses(name, payment_phone, location_address, image_url, lat, lng)')
                             .eq('batch_id', newRide.batch_id)
-                            .in('status', ['accepted', 'preparing', 'ready', 'delivering']);
+                            .in('status', ['accepted', 'preparing', 'ready', 'delivering', 'completed']);
 
                         if (batchOrders) {
                             const mGrouped: Record<string, any> = {};
@@ -730,16 +730,19 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                     mGrouped[bo.business_id] = {
                                         id: bo.business_id,
                                         name: b?.name || 'Shop',
-                                        phone: b?.business_phone || '',
+                                        phone: b?.payment_phone || '',
                                         address: b?.location_address || '',
-                                        image: b?.logo_url || null,
+                                        image: b?.image_url || null,
                                         lat: b?.lat,
                                         lng: b?.lng,
                                         amount: 0,
-                                        isReady: true
+                                        isReady: ['ready', 'delivering', 'arrived', 'completed'].includes(bo.status)
                                     };
                                 }
                                 mGrouped[bo.business_id].amount += parseFloat(bo.total_amount || '0');
+                                if (!['ready', 'delivering', 'arrived', 'completed'].includes(bo.status)) {
+                                    mGrouped[bo.business_id].isReady = false;
+                                }
                                 if (!['ready', 'arrived', 'delivering'].includes(bo.status)) {
                                     mGrouped[bo.business_id].isReady = false;
                                 }
@@ -756,13 +759,13 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                                 }
                                 return {
                                     name: parsed?.business_name || parsed?.name || 'Shop',
-                                    phone: parsed?.business_phone || parsed?.phone || parsed?.payment_phone || '',
+                                    phone: parsed?.payment_phone || parsed?.phone || '',
                                     address: parsed?.business_address || parsed?.address || '',
-                                    image: parsed?.business_image || parsed?.logo_url || null,
+                                    image: parsed?.image_url || null,
                                     lat: parsed?.lat,
                                     lng: parsed?.lng,
                                     amount: parsed?.estimated_cash || 0,
-                                    isReady: ['ready', 'arrived', 'delivering'].includes(parsed?.status || 'ready')
+                                    isReady: ['ready', 'arrived', 'delivering', 'completed'].includes(parsed?.status || 'ready')
                                 };
                             });
                         }
