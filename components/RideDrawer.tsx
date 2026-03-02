@@ -555,14 +555,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                 </button>
                             )}
 
-                            {(rideStatus === 'ACCEPTED' || rideStatus === 'ARRIVED') && (
-                                <button
-                                    onClick={onCancel}
-                                    className="w-full py-4 text-red-500 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/10 rounded-2xl active:scale-95 transition-transform"
-                                >
-                                    <X size={18} /> Cancel {rideType === 'PASSENGER' ? 'Ride' : 'Delivery'}
-                                </button>
-                            )}
+
                         </div>
                     </div>
 

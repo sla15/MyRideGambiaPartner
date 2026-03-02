@@ -230,26 +230,13 @@ export const DriverHome: React.FC = () => {
                         }
 
                         try {
-                            if (isMerchant) {
-                                // For merchant deliveries, slide to cancel just releases the driver but keeps request alive
-                                const { error } = await supabase
-                                    .from('rides')
-                                    .update({ status: 'searching', driver_id: null })
-                                    .eq('id', currentRide.id);
-                                if (error) throw error;
+                            const { data, error } = await supabase.rpc('unassign_ride', {
+                                p_ride_id: currentRide.id,
+                                p_driver_id: user?.id
+                            });
 
-                                if (currentRide.batch_id) {
-                                    await supabase.from('orders').update({ status: 'ready' }).eq('batch_id', currentRide.batch_id);
-                                }
-                            } else {
-                                const { data, error } = await supabase.rpc('cancel_ride_driver', {
-                                    p_ride_id: currentRide.id,
-                                    p_driver_id: user?.id
-                                });
-
-                                if (error) throw error;
-                                if (data && !data.success) throw new Error(data.error || 'Failed to cancel');
-                            }
+                            if (error) throw error;
+                            if (data && !data.success) throw new Error(data.error || 'Failed to cancel');
                         } catch (error: any) {
                             console.error('Cancellation error:', error);
                             pushNotification('Sync Error', 'Failed to cancel trip.', 'SYSTEM');
