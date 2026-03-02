@@ -100,6 +100,7 @@ export const useDriverMap = (
             if (!directionsRenderer.current) {
                 directionsRenderer.current = new google.maps.DirectionsRenderer({
                     map: googleMapInstance.current,
+                    preserveViewport: true,
                     suppressMarkers: false,
                     polylineOptions: { strokeColor: '#00E39A', strokeWeight: 6, strokeOpacity: 0.9 }
                 });

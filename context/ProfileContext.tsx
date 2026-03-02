@@ -375,6 +375,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     await loadUserData(currentUser.id);
                 } else {
                     setIsOnboarded(false);
+                    setIncomingRides([]);
+                    setRole('CUSTOMER');
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
@@ -1051,26 +1053,19 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     const signOut = async () => {
-        const hasBothRoles = profile.vehicle && profile.business;
-        if (hasBothRoles) {
-            if (sessionStorage.getItem('partner_did_toggle_once')) {
-                sessionStorage.removeItem('partner_did_toggle_once');
-                await supabase.auth.signOut();
-            } else {
-                sessionStorage.setItem('partner_did_toggle_once', 'true');
-                const nextRole = role === 'DRIVER' ? 'MERCHANT' : 'DRIVER';
-                updateActiveRole(nextRole);
-            }
-        } else {
-            await supabase.auth.signOut();
-        }
+        setIncomingRides([]);
+        await supabase.auth.signOut();
     };
 
     return (
         <ProfileContext.Provider value={{
             role, setRole, profile, setProfile, updateProfile, isOnboarded, completeOnboarding: (p?: UserProfile) => completeOnboarding(p),
             secondaryOnboardingRole, startSecondaryOnboarding: (r) => { setRole(r); setSecondaryOnboardingRole(r); },
-            cancelSecondaryOnboarding: () => setSecondaryOnboardingRole(null),
+            cancelSecondaryOnboarding: () => {
+                setSecondaryOnboardingRole(null);
+                if (profile.business && !profile.vehicle) setRole('MERCHANT');
+                else if (profile.vehicle && !profile.business) setRole('DRIVER');
+            },
             toggleOnlineStatus, payCommission, signOut, uploadFile, loadUserData, syncProfile, updateActiveRole,
             requestAccountDeletion,
             rideStats, orderStats, incomingRides, setIncomingRides,

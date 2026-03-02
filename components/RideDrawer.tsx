@@ -56,7 +56,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
     // Dynamic height calculation
     const drawerHeight = isDrawerExpanded
         ? 'h-[92vh]'
-        : isNavigating
+        : (isNavigating || rideStatus === 'ARRIVED')
             ? 'h-[320px]'
             : 'h-[460px]';
 

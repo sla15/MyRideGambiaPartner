@@ -114,6 +114,7 @@ export const useRideLifecycle = (
         setIsProcessing(true);
         try {
             setRideStatus('ARRIVED');
+            setIsDrawerExpanded(false);
             await supabase.from('rides').update({ status: 'arrived' }).eq('id', currentRide.id);
             const isDelivery = currentRide.type === 'DELIVERY' || currentRide.type === 'MERCHANT_DELIVERY';
             pushNotification(isDelivery ? 'Delivery Update' : 'You have Arrived', isDelivery ? 'Notify the merchant you are here.' : 'Notify the passenger you are here.', 'SYSTEM');
@@ -276,9 +277,15 @@ export const useRideLifecycle = (
         if (!isStillInQueue) {
             // Ride was silently taken or cancelled — close drawer now and show alert
             showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
-            setCurrentRide(null);
-            setRideStatus('IDLE');
-            setIsDrawerExpanded(false);
+
+            if (incomingRides.length > 0) {
+                setCurrentRide(incomingRides[0]);
+                setCountdown(20);
+            } else {
+                setCurrentRide(null);
+                setRideStatus('IDLE');
+                setIsDrawerExpanded(false);
+            }
         }
     }, [incomingRides, currentRide?.id, rideStatus]);
 
