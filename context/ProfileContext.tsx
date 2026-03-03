@@ -691,28 +691,53 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     };
 
+    const activeSearchesRef = useRef<Map<string, () => void>>(new Map());
+
     const handleNewRide = (newRide: any) => {
+        if (activeSearchesRef.current.has(newRide.id)) {
+            return;
+        }
+
         console.log("[ProfileContext] handleNewRide started for:", newRide.id);
         const startTime = new Date().getTime();
 
-        // Interval to check distance with expanding radius
-        const checkInterval = setInterval(async () => {
+        // 1. Subscribe to status updates to stop searching if ride is taken/cancelled
+        // Removed per-ride statusChannel, relying on global UPDATE listener instead.
+
+        let checkInterval: any = null;
+
+        const cleanup = () => {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+            activeSearchesRef.current.delete(newRide.id);
+        };
+
+        activeSearchesRef.current.set(newRide.id, cleanup);
+
+        // 2. Interval for distance check and radius expansion (No DB status polling)
+        checkInterval = setInterval(async () => {
             const currentProfile = profileRef.current;
             const lat = currentProfile.currentLat || 50.110924;
             const lng = currentProfile.currentLng || 8.682127;
 
-            // Check if ride is still available
-            const { data: currentRideStatus } = await supabase.from('rides').select('status').eq('id', newRide.id).single();
-            if (currentRideStatus?.status !== 'searching') {
-                clearInterval(checkInterval);
-                return;
-            }
-
             const distance = calculateDistance(lat, lng, newRide.pickup_lat, newRide.pickup_lng);
             const elapsedSeconds = (new Date().getTime() - startTime) / 1000;
-            const dynamicRadius = 99999; // Massively expand for testing
 
-            if (distance <= dynamicRadius) {
+            // Expand radius: Start logic (1km default, expanding every 15s)
+            // Match user request: "search for driver within 1km and it will increase until it hit where the driver_search_radius_km is set"
+            const searchLimit = appSettings.driver_search_radius_km || 10;
+            const dynamicRadius = Math.min(1 + Math.floor(elapsedSeconds / 15), searchLimit);
+
+            // Special case logic for merchant delivery noted by user
+            const isMerchantDelivery = newRide.type === 'MERCHANT_DELIVERY' || newRide.ride_type === 'MERCHANT_DELIVERY';
+            const distanceEligible = isMerchantDelivery || (distance <= dynamicRadius);
+
+            if (distanceEligible) {
+                // Check status one last time before fetching details to avoid redundant network load
+                // Removed single-fetch status check, relying on global UPDATE listener for status changes.
+
                 const fetchPassenger = async () => {
                     const { data: userData } = await supabase
                         .from('profiles')
@@ -813,18 +838,17 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         return [...prev, rideToAdd];
                     });
 
-                    // IMPORTANT: Also update currentRide if this IS the active ride
                     if (currentRide?.id === rideToAdd.id) {
                         setCurrentRide(rideToAdd);
                     }
                 };
 
                 fetchPassenger();
-                clearInterval(checkInterval);
+                cleanup(); // Found and fetched, stop the interval
             }
 
-            if (elapsedSeconds > 60) clearInterval(checkInterval);
-        }, 2000);
+            if (elapsedSeconds > 300) cleanup(); // Timeout after 5 mins
+        }, 3000);
     };
 
     useEffect(() => {
@@ -843,7 +867,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 const newRide = payload.new;
 
                 if (newRide.status !== 'searching') {
-                    console.log("[ProfileContext] Ignoring non-searching ride");
                     return;
                 }
 
@@ -863,8 +886,6 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
                 if (!rejectedRideIdsRef.current.has(newRide.id) && !isOverDebtLimit && (rideType === currentDriverVehicleType || isEligibleForDelivery)) {
                     handleNewRide(newRide);
-                } else if (isOverDebtLimit && isEligibleForDelivery) {
-                    console.log("[ProfileContext] Ride blocked due to debt debt:", currentProfile.commissionDebt);
                 }
             })
             .on('postgres_changes', {
@@ -873,17 +894,18 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 table: 'rides'
             }, (payload) => {
                 const updatedRide = payload.new;
-                // If the updated ride is no longer searching, remove it from the queue
+                // If the updated ride is no longer searching, remove it from the queue and stop search intervals
                 if (updatedRide.status !== 'searching') {
+                    const searchCleanup = activeSearchesRef.current.get(updatedRide.id);
+                    if (searchCleanup) searchCleanup();
                     setIncomingRides(prev => prev.filter(r => r.id !== updatedRide.id));
                 } else {
-                    // If it's still searching, check if we should show it (maybe it's a batch update)
                     const estCommission = (parseFloat(updatedRide.price || '0') * appSettings.commission_percentage) / 100;
                     const currentProfile = profileRef.current;
                     const isOverDebtLimit = (currentProfile.commissionDebt + estCommission) > appSettings.max_driver_cash_amount;
 
                     if (!rejectedRideIdsRef.current.has(updatedRide.id) && !isOverDebtLimit) {
-                        handleNewRide(updatedRide); // This will now update the ride if it exists
+                        handleNewRide(updatedRide);
                     }
                 }
             })

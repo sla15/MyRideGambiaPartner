@@ -61,45 +61,36 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const loadMerchantOrders = useCallback(async (businessId: string) => {
         try {
-            // Use explicit Foreign Key for customer join to avoid ambiguity (customer_id vs driver_id)
+            // Use explicit Foreign Key for customer join + fetch items and products in one go
             const { data: ordersData, error } = await supabase
                 .from('orders')
-                .select('*, customer:profiles!orders_customer_id_fkey(full_name, phone)')
+                .select(`
+                    *,
+                    customer:profiles!orders_customer_id_fkey(full_name, phone),
+                    order_items(
+                        *,
+                        products(*)
+                    )
+                `)
                 .eq('business_id', businessId)
                 .eq('hidden_by_merchant', false)
                 .order('created_at', { ascending: false });
 
             console.log(`[DomainContext] Loaded ${ordersData?.length} orders for business ${businessId}`);
+
             if (error) {
-                console.error("[DomainContext] Error fetching orders (Check console for object details):", JSON.stringify(error, null, 2));
+                console.error("[DomainContext] Error fetching orders:", JSON.stringify(error, null, 2));
                 throw error;
             }
 
-            if (error) throw error;
-
-            const ordersWithItems: Order[] = [];
-            for (const o of ordersData) {
-                const { data: items } = await supabase
-                    .from('order_items')
-                    .select('*, products(*)')
-                    .eq('order_id', o.id);
-
+            const ordersWithItems: Order[] = (ordersData || []).map(o => {
                 const customerData = Array.isArray(o.customer) ? o.customer[0] : o.customer;
 
-                // Safety check for items with missing products
-                const validItems = (items || []).filter(i => i.products);
-
-                ordersWithItems.push({
-                    id: o.id,
-                    customerName: customerData?.full_name || 'Customer',
-                    customerPhone: customerData?.phone || '',
-                    status: o.status as OrderStatus,
-                    total: parseFloat(o.total_amount),
-                    timestamp: new Date(o.created_at),
-                    items: (validItems || []).map(i => {
-                        // Ensure product data is an object even if Supabase returns it as a list
+                // Map joined items and products
+                const mappedItems = (o.order_items || [])
+                    .filter((i: any) => i.products)
+                    .map((i: any) => {
                         const productData = Array.isArray(i.products) ? i.products[0] : i.products;
-
                         return {
                             product: {
                                 id: productData?.id,
@@ -111,16 +102,24 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                             quantity: i.quantity || 1,
                             checked: false
                         };
-                    })
-                });
+                    });
 
-                // Recalculate total based purely on item prices (ignoring delivery fees)
-                const lastIdx = ordersWithItems.length - 1;
-                const itemsSubtotal = ordersWithItems[lastIdx].items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-                ordersWithItems[lastIdx].total = itemsSubtotal;
-            }
+                // Recalculate total based purely on item prices
+                const total = mappedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+                return {
+                    id: o.id,
+                    customerName: customerData?.full_name || 'Customer',
+                    customerPhone: customerData?.phone || '',
+                    status: o.status as OrderStatus,
+                    total: total,
+                    timestamp: new Date(o.created_at),
+                    items: mappedItems
+                };
+            });
+
             setMerchantOrders(ordersWithItems);
-            console.log(`[DomainContext] Final processed orders: ${ordersWithItems.length}`, ordersWithItems);
+            console.log(`[DomainContext] Final processed orders: ${ordersWithItems.length}`);
         } catch (err) {
             console.error("Error loading merchant orders:", err);
         }
