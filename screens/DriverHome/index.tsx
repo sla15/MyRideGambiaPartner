@@ -270,16 +270,28 @@ export const DriverHome: React.FC = () => {
                         }
 
                         try {
+                            const rideIdToReject = currentRide.id;
                             const { data, error } = await supabase.rpc('unassign_ride', {
-                                p_ride_id: currentRide.id,
+                                p_ride_id: rideIdToReject,
                                 p_driver_id: user?.id
                             });
 
                             if (error) throw error;
                             if (data && !data.success) throw new Error(data.error || 'Failed to cancel');
+
+                            // Add to rejected list to prevent it reappearing immediately
+                            setRejectedRideIds(prev => {
+                                const newSet = new Set(prev);
+                                newSet.add(rideIdToReject);
+                                return newSet;
+                            });
                         } catch (error: any) {
                             console.error('Cancellation error:', error);
-                            // We still proceed to clear local state to un-stuck the UI
+                            // Even if RPC fails, we should try to un-stuck the UI if the ride is gone from our local knowledge
+                            if (currentRide) {
+                                const rideId = currentRide.id;
+                                setRejectedRideIds(prev => new Set(prev).add(rideId));
+                            }
                         }
                         const isDelivery = currentRide.type === 'DELIVERY' || isMerchant;
                         notifyCustomer(isDelivery ? 'Delivery Update' : 'Ride Cancelled', isMerchant ? 'Driver unassigned. Searching for a new one.' : 'Driver had to cancel.');

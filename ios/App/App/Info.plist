@@ -47,5 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>DROPOFF Partner uses your location to connect you with nearby delivery requests and provide navigation to pick-up and drop-off points.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app collects location data to enable tracking of your active delivery and calculate earnings even when the app is in the background.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>DROPOFF Partner requires camera access to allow you to take photos of your identity documents and vehicle for verification.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>DROPOFF Partner requires photo library access to let you upload existing photos of your documents for verification.</string>
 </dict>
 </plist>

@@ -215,7 +215,7 @@ export const OnboardingScreen: React.FC = () => {
       <div className="space-y-6 shrink-0">
         <button onClick={() => setStepIndex(steps.indexOf('PHONE_INPUT'))} className="w-full bg-[#00E39A] text-slate-900 font-black text-[20px] py-5 rounded-[24px] shadow-lg active:scale-[0.97] transition-all">Get Started</button>
         <p className="text-center text-[11px] text-slate-400 font-medium px-4 leading-relaxed">
-          By continuing you have agreed to our <span className="underline">Terms of Services</span> and <span className="underline">Privacy Policy</span>.
+          By continuing you have agreed to our <a href="https://superapp-hub.vercel.app/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms of Services</a> and <a href="https://superapp-hub.vercel.app/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.
         </p>
       </div>
     </div>
