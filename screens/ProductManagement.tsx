@@ -332,6 +332,16 @@ export const ProductManagement: React.FC = () => {
                                 />
                             </div>
 
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Description (Optional)</label>
+                                <textarea
+                                    value={editingProduct ? editingProduct.description || '' : newProduct.description || ''}
+                                    onChange={(e) => editingProduct ? setEditingProduct({ ...editingProduct, description: e.target.value }) : setNewProduct({ ...newProduct, description: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-zinc-800 p-4 rounded-xl mt-1 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00E39A] text-base min-h-[100px] max-h-[160px]"
+                                    placeholder="e.g. Served with fresh vegetables and secret sauce"
+                                />
+                            </div>
+
                             <div className="flex gap-4">
                                 <div className="flex-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase ml-1">Price (GMD)</label>
