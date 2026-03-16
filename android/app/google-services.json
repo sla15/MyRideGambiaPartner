@@ -1,48 +1,48 @@
 {
-    "project_info": {
-        "project_number": "791001809445",
-        "project_id": "ride-gm",
-        "storage_bucket": "ride-gm.firebasestorage.app"
-    },
-    "client": [
-        {
-            "client_info": {
-                "mobilesdk_app_id": "1:791001809445:android:347eb9446745fffce4f5cc",
-                "android_client_info": {
-                    "package_name": "com.dropoffgambia.customer"
-                }
-            },
-            "oauth_client": [],
-            "api_key": [
-                {
-                    "current_key": "AIzaSyC5qcs0wMfkq4n-Mwf2er1-llBHshTh-ik"
-                }
-            ],
-            "services": {
-                "appinvite_service": {
-                    "other_platform_oauth_client": []
-                }
-            }
-        },
-        {
-            "client_info": {
-                "mobilesdk_app_id": "1:791001809445:android:1255547cee60722de4f5cc",
-                "android_client_info": {
-                    "package_name": "com.dropoffgambia.partner"
-                }
-            },
-            "oauth_client": [],
-            "api_key": [
-                {
-                    "current_key": "AIzaSyC5qcs0wMfkq4n-Mwf2er1-llBHshTh-ik"
-                }
-            ],
-            "services": {
-                "appinvite_service": {
-                    "other_platform_oauth_client": []
-                }
-            }
+  "project_info": {
+    "project_number": "791001809445",
+    "project_id": "ride-gm",
+    "storage_bucket": "ride-gm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791001809445:android:347eb9446745fffce4f5cc",
+        "android_client_info": {
+          "package_name": "com.dropoffgambia.customer"
         }
-    ],
-    "configuration_version": "1"
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5qcs0wMfkq4n-Mwf2er1-llBHshTh-ik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791001809445:android:1255547cee60722de4f5cc",
+        "android_client_info": {
+          "package_name": "com.dropoffgambia.partner"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5qcs0wMfkq4n-Mwf2er1-llBHshTh-ik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }

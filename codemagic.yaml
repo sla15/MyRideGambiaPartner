@@ -1,50 +1,77 @@
+# Codemagic Build Configuration for DROPOFF Partner App
+// turbo-all
 workflows:
   android-workflow:
-    name: Android Workflow
+    name: Android Build
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    instance_type: mac_mini_m1
     environment:
-      node: latest
       groups:
-        - google_play # For publishing
+        - google_play_credentials
       vars:
         PACKAGE_NAME: "com.dropoffgambia.partner"
+        JAVA_VERSION: "17"
+      node: latest
     scripts:
       - name: Install dependencies
         script: npm install
       - name: Build web assets
         script: npm run build
-      - name: Capacitor Sync
+      - name: Sync Capacitor project
         script: npx cap sync android
-      - name: Build Android (Debug/Release)
+      - name: Decode Keystore
+        script: echo $CM_KEYSTORE | base64 --decode > android/app/dropoff.keystore
+      - name: Build Android App Bundle & APK
         script: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew bundleRelease assembleRelease \
+            -Pandroid.injected.signing.store.file=dropoff.keystore \
+            -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD
     artifacts:
-      - android/app/build/outputs/apk/**/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        recipients:
+          - dropoffgm@gmail.com
+        notify:
+          success: true
+          failure: true
 
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Build
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    instance_type: mac_mini_m1
     environment:
+      groups:
+        - apple_auth_credentials
+      vars:
+        BUNDLE_ID: "com.dropoffgambia.partner"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
       node: latest
       xcode: latest
       cocoapods: default
-      groups:
-        - app_store_credentials # For publishing
     scripts:
       - name: Install dependencies
         script: npm install
       - name: Build web assets
         script: npm run build
-      - name: Capacitor Sync
-        script: |
-          npx cap sync ios
-          npx cap update ios
-      - name: Build iOS
+      - name: Sync Capacitor project
+        script: npx cap sync ios
+      - name: Install CocoaPods
         script: |
           cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -allowProvisioningUpdates build
+          pod install
+      - name: Build iOS App
+        script: xcode-project build-ipa --workspace "$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
     artifacts:
-      - ios/App/build/Release-iphoneos/*.ipa
+      - build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - dropoffgm@gmail.com
+        notify:
+          success: true
+          failure: true

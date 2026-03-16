@@ -41,7 +41,9 @@ const DrawerFrame: React.FC<DrawerProps> = ({ isOpen, onClose, title, children }
 
 export const BusinessDetailsContent: React.FC<{ onClose: () => void, onActiveDrawerChange?: (drawer: 'VEHICLE' | 'LOCATION' | 'VERIFICATION' | 'BUSINESS' | 'BUSINESS_MAP' | null) => void }> = ({ onClose, onActiveDrawerChange }) => {
   const { profile, updateProfile, uploadFile, syncProfile, pushNotification } = useApp();
+  const [isSaving, setIsSaving] = useState(false);
   const [localBusiness, setLocalBusiness] = useState(profile.business || {
+
     businessName: '', category: 'Restaurant', eWallet: 'Wave' as any, address: '', logo: '', website: '', subCategories: [], workingHours: { start: '09:00', end: '21:00' }, workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], phone: '', lat: undefined, lng: undefined, paymentPhone: ''
   });
   const [categories, setCategories] = useState<{ label: string; value: string }[]>([]);
@@ -160,13 +162,27 @@ export const BusinessDetailsContent: React.FC<{ onClose: () => void, onActiveDra
         </div>
       </div>
 
-      <button onClick={async () => {
-        const updated = { ...profile, business: localBusiness };
-        updateProfile({ business: localBusiness });
-        await syncProfile(updated);
-        pushNotification('Success', 'Store details updated', 'SYSTEM');
-        onClose();
-      }} className="w-full bg-[#00E39A] text-slate-900 font-black py-5 rounded-2xl shadow-xl active:scale-95 transition-all">Update Store</button>
+      <button 
+        onClick={async () => {
+          setIsSaving(true);
+          try {
+            const updated = { ...profile, business: localBusiness };
+            updateProfile({ business: localBusiness });
+            await syncProfile(updated);
+            pushNotification('Success', 'Store details updated', 'SYSTEM');
+            setIsSaving(false);
+            onClose();
+          } catch (err) {
+            console.error("Store update error:", err);
+            setIsSaving(false);
+          }
+        }} 
+        disabled={isSaving}
+        className="w-full bg-[#00E39A] text-slate-900 font-black py-5 rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+      >
+        {isSaving ? <Loader2 className="animate-spin" size={24} /> : 'Update Store'}
+      </button>
+
     </div>
   );
 };
@@ -296,13 +312,16 @@ const VehicleDetailsContent: React.FC<{ onClose: () => void }> = ({ onClose }) =
           await syncProfile(updated);
           await completeOnboarding(updated);
           pushNotification('Success', 'Vehicle updated', 'SYSTEM');
+          setIsSaving(false);
           onClose();
-        } finally {
+        } catch (err) {
+          console.error("Vehicle update error:", err);
           setIsSaving(false);
         }
       }} disabled={isSaving} className="w-full bg-[#00E39A] text-slate-900 font-black py-5 rounded-2xl shadow-xl mt-4 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:scale-100">
         {isSaving ? <Loader2 className="animate-spin" size={24} /> : 'Save Changes'}
       </button>
+
     </div>
   );
 };

@@ -18,6 +18,22 @@ try {
     console.warn("FCM: Messaging not initialized (likely platform restriction)");
 }
 
+export const requestNotificationPermission = async (): Promise<boolean> => {
+    if (!("Notification" in window)) {
+        console.error("❌ FCM: This browser does not support notifications.");
+        return false;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        console.log("🔔 FCM: Permission status:", permission);
+        return permission === "granted";
+    } catch (err) {
+        console.error("❌ FCM: Permission request error:", err);
+        return false;
+    }
+};
+
 export const initFCM = async (userId?: string, onForegroundMessage?: (title: string, body: string, data?: any) => void) => {
     try {
         console.log("🔔 FCM: Starting initialization for user:", userId || "anonymous");
@@ -35,6 +51,36 @@ export const initFCM = async (userId?: string, onForegroundMessage?: (title: str
 const initNativePush = async (userId?: string, onForegroundMessage?: (title: string, body: string, data?: any) => void) => {
     console.log("🔔 FCM: Initializing Native Push (Capacitor)");
 
+    // 1. Create Channels for Android 8.0+
+    if (Capacitor.getPlatform() === 'android') {
+        try {
+            await PushNotifications.createChannel({
+                id: 'ride_requests',
+                name: 'Ride & Order Requests',
+                description: 'Critical alerts for new rides and order updates',
+                importance: 5, // Importance.HIGH
+                visibility: 1, // Visibility.PUBLIC
+                vibration: true,
+                lights: true,
+                lightColor: '#00E39A',
+                sound: 'cashregistersound' 
+            });
+
+            await PushNotifications.createChannel({
+                id: 'default',
+                name: 'General Notifications',
+                description: 'Updates and general information',
+                importance: 3, // Importance.DEFAULT
+                visibility: 1,
+                vibration: true
+            });
+            console.log("✅ FCM: Android Channels created");
+        } catch (e) {
+            console.warn("⚠️ FCM: Failed to create channels:", e);
+        }
+    }
+
+    // 2. Check Permissions
     let permStatus = await PushNotifications.checkPermissions();
 
     if (permStatus.receive === 'prompt') {
@@ -42,14 +88,11 @@ const initNativePush = async (userId?: string, onForegroundMessage?: (title: str
     }
 
     if (permStatus.receive !== 'granted') {
-        console.warn("⚠️ FCM: Native push permissions not granted");
+        console.warn("⚠️ FCM: Native push permissions not granted. Status:", permStatus.receive);
         return;
     }
 
-    // Register for push notifications
-    await PushNotifications.register();
-
-    // On registration, we get the token
+    // 3. Attach listeners BEFORE registration
     PushNotifications.addListener('registration', async (token) => {
         console.log('✅ FCM: Native registration successful. Token:', token.value.substring(0, 10) + "...");
         if (userId) {
@@ -74,6 +117,10 @@ const initNativePush = async (userId?: string, onForegroundMessage?: (title: str
     PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
         console.log('🔔 FCM: Native notification action performed:', notification);
     });
+
+    // 4. Register for remote notifications
+    await PushNotifications.register();
+
 };
 
 const initWebPush = async (userId?: string, onForegroundMessage?: (title: string, body: string, data?: any) => void) => {
@@ -82,63 +129,59 @@ const initWebPush = async (userId?: string, onForegroundMessage?: (title: string
         return;
     }
 
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-        console.warn("⚠️ FCM: Notification permission not granted");
+    if (Notification.permission !== "granted") {
+        console.warn("⚠️ FCM: Notification permission not granted yet. Skipping token generation.");
         return;
     }
 
     if (!messaging) return;
 
-    const token = await getToken(messaging, {
-        vapidKey: APP_CONFIG.FCM_VAPID_KEY
-    });
+    try {
+        const token = await getToken(messaging, {
+            vapidKey: APP_CONFIG.FCM_VAPID_KEY
+        });
 
-    if (token) {
-        console.log("✅ FCM: Web token generated.");
-        if (userId) await syncFCMTokenToSupabase(userId, token);
-    }
-
-    onMessage(messaging, (payload) => {
-        console.log("🔔 FCM: Web message received in foreground:", payload);
-
-        const title = payload.notification?.title || 'New Notification';
-        const body = payload.notification?.body || '';
-
-        // Trigger sound regardless of UI
-        if (payload.data?.ride_id || title.includes('Request')) {
-            playNotificationSound();
+        if (token) {
+            console.log("✅ FCM: Web token generated.");
+            if (userId) await syncFCMTokenToSupabase(userId, token);
         }
 
-        // Use callback if provided
-        if (onForegroundMessage) {
-            onForegroundMessage(title, body, payload.data);
-        }
+        onMessage(messaging, (payload) => {
+            console.log("🔔 FCM: Web message received in foreground:", payload);
 
-        if (payload.notification) {
-            try {
-                // Background notifications are handled by the browser/SW
-                // For foreground, we attempt to show a browser notification
-                const notificationTitle = title;
-                const notificationOptions = {
-                    body: body,
-                    icon: '/assets/logo.png',
-                    data: payload.data,
-                    tag: payload.data?.ride_id || 'general' // Prevent duplicates
-                };
+            const title = payload.notification?.title || 'New Notification';
+            const body = payload.notification?.body || '';
 
-                console.log("🔔 FCM: Attempting to show foreground notification:", notificationTitle, notificationOptions);
-                const notification = new Notification(notificationTitle, notificationOptions);
-
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
-            } catch (err) {
-                console.warn("⚠️ FCM: Could not show browser notification in foreground:", err);
+            if (payload.data?.ride_id || title.includes('Request')) {
+                playNotificationSound();
             }
-        }
-    });
+
+            if (onForegroundMessage) {
+                onForegroundMessage(title, body, payload.data);
+            }
+
+            if (payload.notification) {
+                try {
+                    const notificationTitle = title;
+                    const notificationOptions = {
+                        body: body,
+                        icon: '/assets/logo.png',
+                        data: payload.data,
+                        tag: payload.data?.ride_id || 'general'
+                    };
+                    const notification = new Notification(notificationTitle, notificationOptions);
+                    notification.onclick = () => {
+                        window.focus();
+                        notification.close();
+                    };
+                } catch (err) {
+                    console.warn("⚠️ FCM: Could not show browser notification in foreground:", err);
+                }
+            }
+        });
+    } catch (err) {
+        console.error("❌ FCM: Web push registration failed:", err);
+    }
 };
 
 const playNotificationSound = () => {
@@ -153,11 +196,11 @@ const playNotificationSound = () => {
 export const syncFCMTokenToSupabase = async (userId: string, token: string) => {
     const { error } = await supabase
         .from('profiles')
-        .upsert({
-            id: userId,
+        .update({
             fcm_token: token,
             updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
+        })
+        .eq('id', userId);
 
     if (error) console.error('❌ FCM: Sync failed:', error);
     else console.log('✅ FCM: Token synced to Supabase');

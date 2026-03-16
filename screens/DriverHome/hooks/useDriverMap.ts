@@ -156,7 +156,10 @@ export const useDriverMap = (
         const currentPosRef = driverMarker.current?.position || targetPos;
         let animationFrameId: number;
         let startTime: number;
-        const duration = 1000;
+        
+        // Low-end device optimization: longer duration for smoother but less frequent updates
+        const isLowEnd = (navigator.hardwareConcurrency || 4) <= 2;
+        const duration = isLowEnd ? 1500 : 1000;
 
         const animateMarker = (timestamp: number) => {
             if (!startTime) startTime = timestamp;
@@ -167,21 +170,33 @@ export const useDriverMap = (
                 const lng = currentPosRef.lng + (targetPos.lng - currentPosRef.lng) * progress;
                 const nextPos = { lat, lng };
 
-                if (typeof driverMarker.current.setPosition === 'function') {
-                    driverMarker.current.setPosition(nextPos);
-                } else {
-                    driverMarker.current.position = nextPos;
+                // Only update position if it changed significantly
+                const distMoved = Math.abs(lat - targetPos.lat) + Math.abs(lng - targetPos.lng);
+                if (distMoved > 0.000001 || progress === 1) {
+                    if (typeof driverMarker.current.setPosition === 'function') {
+                        driverMarker.current.setPosition(nextPos);
+                    } else {
+                        driverMarker.current.position = nextPos;
+                    }
                 }
 
                 if (isFollowing && !currentRide) {
-                    googleMapInstance.current.panTo(nextPos);
+                    // Check if we need to pan (threshold to avoid jitter)
+                    const center = googleMapInstance.current.getCenter();
+                    const centerDist = Math.abs(center.lat() - nextPos.lat) + Math.abs(center.lng() - nextPos.lng);
+                    if (centerDist > 0.0005) {
+                        googleMapInstance.current.panTo(nextPos);
+                    }
                 }
             }
 
             if (progress < 1) {
                 animationFrameId = requestAnimationFrame(animateMarker);
             } else {
-                if (driverMarker.current) driverMarker.current.position = targetPos;
+                if (driverMarker.current) {
+                    if (typeof driverMarker.current.setPosition === 'function') driverMarker.current.setPosition(targetPos);
+                    else driverMarker.current.position = targetPos;
+                }
             }
         };
 

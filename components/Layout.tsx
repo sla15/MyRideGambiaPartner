@@ -9,9 +9,11 @@ import { ProductManagement } from '../screens/ProductManagement';
 import { WalletScreen } from '../screens/WalletScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ChatScreen } from '../screens/ChatScreen';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 export const Layout: React.FC = () => {
-  const { role, activeChat, currentTab, setCurrentTab, isDarkMode, isLocked } = useApp();
+  const { role, activeChat, closeChat, currentTab, setCurrentTab, isDarkMode, isLocked } = useApp();
 
   // Auto-switch to wallet if locked
   React.useEffect(() => {
@@ -19,6 +21,31 @@ export const Layout: React.FC = () => {
       setCurrentTab('wallet');
     }
   }, [isLocked, currentTab, setCurrentTab]);
+
+  // Hardware Back Button Handling
+  React.useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const backListener = App.addListener('backButton', ({ canGoBack }) => {
+      if (activeChat) {
+        // 1. If chat is open, close it
+        closeChat();
+      } else if (currentTab !== (role === 'DRIVER' ? 'home' : 'orders')) {
+        // 2. If not on home/orders tab, go there
+        setCurrentTab(role === 'DRIVER' ? 'home' : 'orders');
+      } else if (canGoBack) {
+        // 3. Fallback to browser history if possible
+        window.history.back();
+      } else {
+        // 4. Fully exit app if on home and no history
+        App.exitApp();
+      }
+    });
+
+    return () => {
+      backListener.then(l => l.remove());
+    };
+  }, [activeChat, closeChat, currentTab, setCurrentTab, role]);
 
   const renderScreen = () => {
     if (role === 'DRIVER') {

@@ -21,7 +21,8 @@ interface ProfileContextType {
     cancelSecondaryOnboarding: () => void;
     toggleOnlineStatus: () => void;
     payCommission: () => void;
-    uploadFile: (file: File, bucketOverride?: string, path?: string) => Promise<string | null>;
+    uploadFile: (file: File | Blob, bucketOverride?: string, path?: string) => Promise<string | null>;
+
     loadUserData: (userId: string) => Promise<void>;
     syncProfile: (targetProfile?: UserProfile) => Promise<void>;
     updateActiveRole: (newRole: Role) => Promise<void>;
@@ -87,10 +88,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return R * c;
     };
 
-    const uploadFile = async (file: File, bucketOverride?: string, path?: string): Promise<string | null> => {
+    const uploadFile = async (file: File | Blob, bucketOverride?: string, path?: string): Promise<string | null> => {
         try {
             let bucket = bucketOverride;
-            let uploadPath = path || `${Date.now()}_${file.name}`;
+            const fileName = (file as File).name || 'upload';
+            let uploadPath = path || `${Date.now()}_${fileName}`;
+
 
             if (!bucket) {
                 if (role === 'DRIVER') bucket = 'driver_documents';
@@ -430,7 +433,15 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 // Determine channel type: RIDE for ride requests, SYSTEM for others
                 const channel = (data?.type === 'ride_request' || data?.ride_id) ? 'RIDE' : 'SYSTEM';
                 pushNotification(title, body, channel);
+                
+                // Also show a direct alert if it's a ride/order request so it's not missed
+                if (channel === 'RIDE' || data?.type === 'order_request') {
+                    showAlert(title, body, () => {
+                        // Optional: navigate to home/wallet if needed
+                    }, "View");
+                }
             });
+
         } else {
             setIsOnboarded(false);
         }
@@ -450,9 +461,12 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         // Local state update for smooth map movement (UI only)
                         updateProfile({ currentLat: latitude, currentLng: longitude, heading: heading || 0 });
 
-                        // Throttled DB Sync: Only every 10 seconds
+                        // Throttled DB Sync: Only every 20 seconds for partner app (saves battery/data)
                         const now = Date.now();
-                        if (now - lastLocationUpdateTime.current > 10000) {
+                        const isLowEnd = (navigator.hardwareConcurrency || 4) <= 2;
+                        const syncThreshold = isLowEnd ? 30000 : 15000;
+                        
+                        if (now - lastLocationUpdateTime.current > syncThreshold) {
                             lastLocationUpdateTime.current = now;
                             await supabase.from('drivers').update({
                                 current_lat: latitude,

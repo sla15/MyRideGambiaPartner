@@ -2,12 +2,18 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Toggle } from '../components/Toggle';
-import { Car, Star, LogOut, Moon, ArrowLeft, Store, Users, Trash2, ChevronRight, Camera } from 'lucide-react';
+import { Car, Star, LogOut, Moon, ArrowLeft, Store, Users, Trash2, ChevronRight, Camera as CameraIcon } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+
 import { supabase } from '../lib/supabase';
 import { Role } from '../types';
 import { ProfileDriverView } from './ProfileDriverView';
 import { ProfileMerchantView } from './ProfileMerchantView';
-import { Phone, MessageCircle, Mail } from 'lucide-react';
+import { Phone, MessageCircle, Mail, Bell } from 'lucide-react';
+import { sendPushNotification } from '../utils/helpers';
+import { requestNotificationPermission, initFCM } from '../utils/fcm';
+
 
 export const ProfileScreen: React.FC = () => {
   const {
@@ -18,6 +24,9 @@ export const ProfileScreen: React.FC = () => {
   } = useApp();
   const [showSupportDrawer, setShowSupportDrawer] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(
+    typeof window !== 'undefined' ? (window.Notification?.permission === 'granted') : false
+  );
 
   const handleRoleSwitch = (targetRole: Role) => {
     if (targetRole === 'DRIVER') {
@@ -71,7 +80,45 @@ export const ProfileScreen: React.FC = () => {
         {/* Profile Header */}
         <div className="flex flex-col items-center my-10 shrink-0 px-6">
           <div className="relative mb-6">
-            <div className="w-[124px] h-[124px] rounded-full p-1 bg-gradient-to-b from-[#00E39A]/40 to-transparent relative group cursor-pointer" onClick={() => document.getElementById('prof-avatar-input')?.click()}>
+            <div className="w-[124px] h-[124px] rounded-full p-1 bg-gradient-to-b from-[#00E39A]/40 to-transparent relative group cursor-pointer" 
+              onClick={async () => {
+                if (Capacitor.isNativePlatform()) {
+                  try {
+                    const image = await Camera.getPhoto({
+                      quality: 90,
+                      allowEditing: false,
+                      resultType: CameraResultType.Uri,
+                      source: CameraSource.Prompt
+                    });
+
+
+                    if (image.webPath) {
+                      const response = await fetch(image.webPath);
+                      const blob = await response.blob();
+                      
+                      const bucket = 'avatars';
+                      const url = await uploadFile(blob, bucket, `${Date.now()}_avatar.jpg`);
+
+                      if (url) {
+                        if (role === 'MERCHANT') {
+                          const updatedBusiness = { ...profile.business!, logo: url };
+                          updateProfile({ business: updatedBusiness });
+                          await syncProfile({ ...profile, business: updatedBusiness });
+                        } else {
+                          updateProfile({ driverProfilePic: url });
+                          await syncProfile({ ...profile, driverProfilePic: url });
+                        }
+                      }
+                    }
+                  } catch (err) {
+                    console.warn("Camera/Gallery cancelled or failed:", err);
+                  }
+                } else {
+                  document.getElementById('prof-avatar-input')?.click();
+                }
+              }}
+            >
+
               <div className="w-full h-full rounded-full border-[5px] border-white dark:border-[#121212] overflow-hidden shadow-xl bg-slate-100 dark:bg-zinc-800 relative flex items-center justify-center">
                 {displayImage ? (
                   <img
@@ -85,8 +132,9 @@ export const ProfileScreen: React.FC = () => {
                   </span>
                 )}
                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="text-white" size={24} />
+                  <CameraIcon className="text-white" size={24} />
                 </div>
+
               </div>
               <input
                 id="prof-avatar-input"
@@ -177,6 +225,37 @@ export const ProfileScreen: React.FC = () => {
               <Toggle checked={isDarkMode} onChange={toggleTheme} />
             </div>
 
+            {/* Push Notifications */}
+            <div className="p-4 flex items-center justify-between border-b border-slate-50 dark:border-zinc-800/50">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-zinc-800 text-slate-500 dark:text-slate-400 flex items-center justify-center"><Bell size={20} /></div>
+                <div className="text-left">
+                  <p className="font-bold text-[15px] text-slate-900 dark:text-white">Push Notifications</p>
+                  <p className="text-[11px] text-slate-400 font-medium">Get alerts for new requests</p>
+                </div>
+              </div>
+              <Toggle 
+                checked={isNotificationsEnabled} 
+                onChange={async () => {
+                  if (!isNotificationsEnabled) {
+                    const granted = await requestNotificationPermission();
+                    if (granted) {
+                      setIsNotificationsEnabled(true);
+                      if (profile.id || (supabase.auth.getSession().then(({data}) => data.session?.user.id))) {
+                         const userId = profile.id || (await supabase.auth.getUser()).data.user?.id;
+                         if (userId) initFCM(userId);
+                      }
+                      pushNotification('Success', 'Notifications enabled', 'SYSTEM');
+                    } else {
+                      showAlert('Permission Denied', 'Please enable notifications in your browser/device settings.');
+                    }
+                  } else {
+                    showAlert('Info', 'To disable notifications, please change your browser/device settings.');
+                  }
+                }} 
+              />
+            </div>
+
             {/* Sign Out */}
             <button
               onClick={signOut}
@@ -244,13 +323,18 @@ export const ProfileScreen: React.FC = () => {
                   <ChevronRight size={18} className="text-slate-300" />
                 </a>
 
-                <a href="https://wa.me/2203888888" target="_blank" className="w-full p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all">
+                <a 
+                  href="whatsapp://send?phone=+2203888888&text=Hello%20Dropoff%20Support,%20I%20am%20a%20Partner%20and%20I%20need%20assistance..." 
+                  target="_blank" 
+                  className="w-full p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all"
+                >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-500/10 text-green-500 flex items-center justify-center"><MessageCircle size={20} /></div>
                     <span className="font-black text-slate-900 dark:text-white">WhatsApp +220 3888888</span>
                   </div>
                   <ChevronRight size={18} className="text-slate-300" />
                 </a>
+
 
                 <a href="mailto:dropoffgm@gmail.com" className="w-full p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-between border border-slate-100 dark:border-zinc-800 active:scale-95 transition-all">
                   <div className="flex items-center gap-4">
@@ -259,12 +343,35 @@ export const ProfileScreen: React.FC = () => {
                   </div>
                   <ChevronRight size={18} className="text-slate-300" />
                 </a>
+
+
               </div>
 
               <button onClick={() => setShowSupportDrawer(false)} className="w-full mt-8 py-4 text-slate-400 font-black uppercase text-xs tracking-widest text-center">Close</button>
             </div>
           </div>
         )}
+        {/* Developer Tools / Push Test */}
+        <div className="mx-6 mt-4 mb-24 p-4 rounded-[24px] border border-dashed border-slate-300 dark:border-zinc-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Developer Tools</p>
+          <button
+            onClick={async () => {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.user) {
+                await sendPushNotification(
+                  "Partner Test ⚡",
+                  "If you see this, push notifications are working correctly for the Partner app!",
+                  role.toLowerCase() as any,
+                  session.user.id
+                );
+                showAlert('Test Notification', 'A test push request has been sent to your device.');
+              }
+            }}
+            className="w-full py-4 rounded-2xl bg-[#00E39A]/10 text-[#00E39A] font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+            <MessageCircle size={18} /> Test Push Notification
+          </button>
+        </div>
       </div>
     </div>
   );

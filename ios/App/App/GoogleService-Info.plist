@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.dropoffgambia.partner</string>
+	<string>com.dropoffgambia.customer</string>
 	<key>PROJECT_ID</key>
 	<string>ride-gm</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:791001809445:ios:cc9d8d27d0d6c3fce4f5cc</string>
+	<string>1:791001809445:ios:eb77c8a1bbcd0803e4f5cc</string>
 </dict>
 </plist>
