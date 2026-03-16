@@ -1,17 +1,16 @@
-# Codemagic Build Configuration for DROPOFF Partner App
-// turbo-all
 workflows:
   android-workflow:
     name: Android Build
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
+      node: 22
+      java: 21
       groups:
-        - google_play_credentials
+        - google_play_credentials # SUPABASE_*, FCM_*, etc.
+        - android_signing         # CM_KEYSTORE_BASE64, CM_KEYSTORE_PASSWORD, etc.
       vars:
         PACKAGE_NAME: "com.dropoffgambia.partner"
-        JAVA_VERSION: "17"
-      node: latest
     scripts:
       - name: Install dependencies
         script: npm install
@@ -19,18 +18,27 @@ workflows:
         script: npm run build
       - name: Sync Capacitor project
         script: npx cap sync android
-      - name: Decode Keystore
-        script: echo $CM_KEYSTORE | base64 --decode > android/app/dropoff.keystore
       - name: Build Android App Bundle & APK
         script: |
           cd android
-          ./gradlew bundleRelease assembleRelease \
-            -Pandroid.injected.signing.store.file=dropoff.keystore \
-            -Pandroid.injected.signing.store.password=$CM_KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$CM_KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$CM_KEY_PASSWORD
+          chmod +x gradlew
+          
+          if [ -n "$CM_KEYSTORE_BASE64" ]; then
+            echo "Decoding Keystore..."
+            echo $CM_KEYSTORE_BASE64 | base64 --decode > /tmp/keystore.jks
+            
+            ./gradlew bundleRelease assembleRelease \
+              -Pandroid.injected.signing.store.file="/tmp/keystore.jks" \
+              -Pandroid.injected.signing.store.password="$CM_KEYSTORE_PASSWORD" \
+              -Pandroid.injected.signing.key.alias="$CM_KEY_ALIAS" \
+              -Pandroid.injected.signing.key.password="$CM_KEY_PASSWORD"
+          else
+            echo "FATAL ERROR: CM_KEYSTORE_BASE64 not set."
+            exit 1
+          fi
     artifacts:
       - android/app/build/outputs/bundle/release/*.aab
+      - android/app/build/outputs/apk/release/*.apk
     publishing:
       email:
         recipients:
@@ -44,15 +52,15 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
+      node: 22
+      xcode: latest
       groups:
+        - google_play_credentials
         - apple_auth_credentials
       vars:
         BUNDLE_ID: "com.dropoffgambia.partner"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      node: latest
-      xcode: latest
-      cocoapods: default
     scripts:
       - name: Install dependencies
         script: npm install
