@@ -224,27 +224,31 @@ export const OnboardingScreen: React.FC = () => {
   const renderPhoneInput = () => {
     const canContinue = phone.length >= 7;
     return (
-      <div className="px-8 pb-10 pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
-        <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Enter your phone</h2>
-        <p className="text-slate-500 text-[15px] mb-8 font-medium">We'll send you a code to verify it.</p>
+      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+        <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
+          <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Enter your phone</h2>
+          <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">We'll send you a code to verify it.</p>
 
-        <div className="flex-1">
-          <Input
-            label="Phone Number"
-            prefix="+220"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            placeholder="******"
-            type="tel"
-            maxLength={7}
-            autoFocus
-          />
+          <div className="mt-2">
+            <Input
+              label="Phone Number"
+              prefix="+220"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="******"
+              type="tel"
+              maxLength={7}
+              autoFocus
+            />
+          </div>
         </div>
 
-        <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-5 rounded-[22px] mt-8 transition-all text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
-          {isVerifying ? <Loader2 className="animate-spin" /> : null}
-          {isVerifying ? 'Sending...' : 'Send Code'}
-        </button>
+        <div className="pt-2 shrink-0">
+          <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
+            {isVerifying ? <Loader2 className="animate-spin" /> : null}
+            {isVerifying ? 'Sending...' : 'Send Code'}
+          </button>
+        </div>
       </div>
     )
   }
@@ -255,88 +259,100 @@ export const OnboardingScreen: React.FC = () => {
     const canContinue = name.trim().length >= 3;
 
     return (
-      <div className="px-8 pb-10 pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
-        <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Tell us about yourself</h2>
-        <p className="text-slate-500 text-[15px] mb-8 font-medium">Your data is stored securely with your profile.</p>
-        <div className="flex-1 overflow-y-auto no-scrollbar space-y-6">
-          <Input label="Full Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Musa Camara" />
-          <div className="flex gap-4">
-            <Dropdown label="Age" value={age} options={ageOptions} onChange={setAge} containerClassName="flex-1" searchable />
-            <Dropdown label="Gender" value={gender} options={genderOptions} onChange={val => setGender(val as any)} containerClassName="flex-1" />
+      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+        <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
+          <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Tell us about yourself</h2>
+          <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">Your data is stored securely with your profile.</p>
+          <div className="space-y-5">
+            <Input label="Full Name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Musa Camara" />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Dropdown label="Age" value={age} options={ageOptions} onChange={setAge} containerClassName="flex-1" searchable />
+              <Dropdown label="Gender" value={gender} options={genderOptions} onChange={val => setGender(val as any)} containerClassName="flex-1" />
+            </div>
           </div>
         </div>
-        <button onClick={() => {
-          // Save profile details to DB immediately to avoid loss
-          updateProfile({ name, age: parseInt(age), gender: gender });
-          handleNext();
-        }} disabled={!canContinue} className={`w-full font-black py-5 rounded-[22px] mt-8 transition-all text-lg flex items-center justify-center gap-2 ${canContinue ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
-          Continue
-        </button>
+        <div className="pt-2 shrink-0">
+          <button onClick={() => {
+            // Save profile details to DB immediately to avoid loss
+            updateProfile({ name, age: parseInt(age), gender: gender });
+            handleNext();
+          }} disabled={!canContinue} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-2 ${canContinue ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
+            Continue
+          </button>
+        </div>
       </div>
     );
   };
 
   const renderVerify = () => (
-    <div className="px-8 pb-10 pt-24 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
-      <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Verification</h2>
-      <p className="text-slate-500 text-lg mb-10 font-medium">Verify +220 {phone}</p>
+    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
+        <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Verification</h2>
+        <p className="text-slate-500 text-[15px] sm:text-lg mb-6 sm:mb-10 font-medium">Verify +220 {phone}</p>
 
-      <div className="flex-1 flex flex-col items-center justify-center -mt-20">
-        <div className="flex gap-2 mb-8">
-          {otp.map((digit, idx) => (
-            <input
-              key={idx}
-              id={`otp-${idx}`}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleOtpChange(idx, e.target.value)}
-              onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-              className="w-12 h-16 bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-2xl text-center text-2xl font-black focus:border-[#00E39A] focus:outline-none transition-all dark:text-white"
-            />
-          ))}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[160px]">
+          <div className="flex gap-1.5 sm:gap-2 mb-6 w-full justify-center">
+            {otp.map((digit, idx) => (
+              <input
+                key={idx}
+                id={`otp-${idx}`}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(idx, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                className="w-10 sm:w-12 h-14 sm:h-16 bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-xl sm:rounded-2xl text-center text-xl sm:text-2xl font-black focus:border-[#00E39A] focus:outline-none transition-all dark:text-white"
+              />
+            ))}
+          </div>
+          <p className="text-slate-500 text-center text-[13px] sm:text-[15px] max-w-[220px] font-medium">Enter the 6-digit code sent to your phone.</p>
         </div>
-        <p className="text-slate-500 text-center max-w-[200px] mb-8 font-medium">Enter the 6-digit code sent to your phone.</p>
       </div>
 
-      <button
-        onClick={handleVerifyOtp}
-        disabled={isVerifying || otp.join('').length < 6}
-        className={`w-full font-black py-5 rounded-[22px] mt-auto transition-all text-lg flex items-center justify-center gap-3 ${otp.join('').length === 6 && !isVerifying
-          ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]'
-          : 'bg-slate-100 text-slate-300'
-          }`}
-      >
-        {isVerifying && <Loader2 className="animate-spin" />}
-        {isVerifying ? 'Verifying...' : 'Verify'}
-      </button>
+      <div className="pt-2 shrink-0">
+        <button
+          onClick={handleVerifyOtp}
+          disabled={isVerifying || otp.join('').length < 6}
+          className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-3 ${otp.join('').length === 6 && !isVerifying
+            ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]'
+            : 'bg-slate-100 text-slate-300'
+            }`}
+        >
+          {isVerifying && <Loader2 className="animate-spin" />}
+          {isVerifying ? 'Verifying...' : 'Verify'}
+        </button>
+      </div>
     </div>
   );
 
   const renderRoleSelection = () => (
-    <div className="px-8 pb-10 pt-24 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
-      <h2 className="text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Select your role</h2>
-      <p className="text-slate-500 text-lg mb-10 font-medium">This determines your partner dashboard.</p>
+    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
+        <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Select your role</h2>
+        <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">This determines your partner dashboard.</p>
 
-      <div className="space-y-4 flex-1">
-        <button onClick={() => { setSelectedRole('DRIVER'); setRole('DRIVER'); }} className={`w-full p-6 rounded-[28px] border-2 transition-all text-left flex items-center gap-5 ${selectedRole === 'DRIVER' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'DRIVER' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><Car size={28} /></div>
-          <div><h4 className="font-black text-xl dark:text-white">Driver</h4><p className="text-slate-500 text-sm font-medium">Earn by giving rides</p></div>
-        </button>
+        <div className="space-y-3 sm:space-y-4">
+          <button onClick={() => { setSelectedRole('DRIVER'); setRole('DRIVER'); }} className={`w-full p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] border-2 transition-all text-left flex items-center gap-4 sm:gap-5 ${selectedRole === 'DRIVER' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
+            <div className={`w-12 sm:w-14 h-12 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'DRIVER' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><Car size={24} className="sm:w-7 sm:h-7" /></div>
+            <div><h4 className="font-black text-lg sm:text-xl dark:text-white">Driver</h4><p className="text-slate-500 text-[13px] sm:text-sm font-medium">Earn by giving rides</p></div>
+          </button>
 
-        <button onClick={() => { setSelectedRole('MERCHANT'); setRole('MERCHANT'); }} className={`w-full p-6 rounded-[28px] border-2 transition-all text-left flex items-center gap-5 ${selectedRole === 'MERCHANT' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'MERCHANT' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><Store size={28} /></div>
-          <div><h4 className="font-black text-xl dark:text-white">Merchant</h4><p className="text-slate-500 text-sm font-medium">Sell food or goods</p></div>
-        </button>
+          <button onClick={() => { setSelectedRole('MERCHANT'); setRole('MERCHANT'); }} className={`w-full p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] border-2 transition-all text-left flex items-center gap-4 sm:gap-5 ${selectedRole === 'MERCHANT' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
+            <div className={`w-12 sm:w-14 h-12 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'MERCHANT' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><Store size={24} className="sm:w-7 sm:h-7" /></div>
+            <div><h4 className="font-black text-lg sm:text-xl dark:text-white">Merchant</h4><p className="text-slate-500 text-[13px] sm:text-sm font-medium">Sell food or goods</p></div>
+          </button>
 
-        <button onClick={() => { setSelectedRole('BOTH'); setRole('DRIVER'); }} className={`w-full p-6 rounded-[28px] border-2 transition-all text-left flex items-center gap-5 ${selectedRole === 'BOTH' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'BOTH' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><User size={28} /></div>
-          <div><h4 className="font-black text-xl dark:text-white">Both</h4><p className="text-slate-500 text-sm font-medium">Maximize your earnings</p></div>
-        </button>
+          <button onClick={() => { setSelectedRole('BOTH'); setRole('DRIVER'); }} className={`w-full p-5 sm:p-6 rounded-[24px] sm:rounded-[28px] border-2 transition-all text-left flex items-center gap-4 sm:gap-5 ${selectedRole === 'BOTH' ? 'bg-[#00E39A]/10 border-[#00E39A]' : 'bg-slate-50 dark:bg-zinc-900 border-transparent'}`}>
+            <div className={`w-12 sm:w-14 h-12 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${selectedRole === 'BOTH' ? 'bg-[#00E39A] text-slate-900' : 'bg-white dark:bg-black text-slate-400'}`}><User size={24} className="sm:w-7 sm:h-7" /></div>
+            <div><h4 className="font-black text-lg sm:text-xl dark:text-white">Both</h4><p className="text-slate-500 text-[13px] sm:text-sm font-medium">Maximize your earnings</p></div>
+          </button>
+        </div>
       </div>
 
-      <button onClick={() => handleNext()} disabled={!selectedRole} className={`w-full font-black py-5 rounded-[22px] mt-6 transition-all text-lg ${selectedRole ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>Continue</button>
+      <div className="pt-2 shrink-0">
+        <button onClick={() => handleNext()} disabled={!selectedRole} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg ${selectedRole ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>Continue</button>
+      </div>
     </div>
   );
 
