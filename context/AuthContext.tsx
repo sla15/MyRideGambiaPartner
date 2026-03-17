@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { initFCM } from '../utils/fcm';
 
 interface AuthContextType {
     user: any | null;
@@ -17,11 +18,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             setLoading(false);
+            // Initialize FCM for existing sessions (app re-opened while user was logged in)
+            if (session?.user) {
+                initFCM(session.user.id).catch(console.error);
+            }
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
             setLoading(false);
+            // Initialize FCM on sign-in events (SIGNED_IN, TOKEN_REFRESHED)
+            if (session?.user && _event === 'SIGNED_IN') {
+                initFCM(session.user.id).catch(console.error);
+            }
         });
 
         return () => subscription.unsubscribe();
