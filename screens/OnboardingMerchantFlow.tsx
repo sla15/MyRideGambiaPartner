@@ -11,12 +11,13 @@ import { supabase } from '../lib/supabase';
 interface OnboardingMerchantFlowProps {
   step: OnboardingStep;
   onNext: (data?: any) => void;
+  keyboardHeight?: number;
 }
 
 const DARK_MAP_STYLES = [{ elementType: "geometry", stylers: [{ color: "#242f3e" }] }, { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] }];
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ step, onNext }) => {
+export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ step, onNext, keyboardHeight = 0 }) => {
   const { updateProfile, isDarkMode, uploadFile, profile, showAlert } = useApp();
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -328,7 +329,8 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
         <button
           onClick={handleNextWithData}
           disabled={isUploading !== null || isCheckingName}
-          className="w-full font-bold py-5 rounded-[22px] mt-6 bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full font-bold py-5 rounded-[22px] mt-6 bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300"
+          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
         >
           {isCheckingName && <Loader2 className="animate-spin" size={20} />}
           Complete Setup

@@ -8,9 +8,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   leftElement?: React.ReactNode;
   rightElement?: React.ReactNode;
   containerClassName?: string;
+  className?: string;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = React.memo(({
   label,
   prefix,
   error,
@@ -19,7 +20,7 @@ export const Input: React.FC<InputProps> = ({
   containerClassName = '',
   className = '',
   ...props
-}) => {
+}: InputProps) => {
   return (
     <div className={`w-full ${containerClassName}`}>
       {label && (
@@ -61,4 +62,4 @@ export const Input: React.FC<InputProps> = ({
       )}
     </div>
   );
-};
+});

@@ -10,9 +10,10 @@ import { UserProfile } from '../types';
 interface OnboardingDriverFlowProps {
   step: OnboardingStep;
   onNext: (data?: any) => void;
+  keyboardHeight?: number;
 }
 
-export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step, onNext }) => {
+export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step, onNext, keyboardHeight = 0 }) => {
   const { updateProfile, uploadFile, profile } = useApp();
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
@@ -130,7 +131,10 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent">
+        <div 
+          className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent transition-all duration-300"
+          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
+        >
           <button
             onClick={() => { updateProfile({ vehicle, location: localLocation }); onNext(); }}
             disabled={isUploading !== null || !vehicle.model.trim() || !vehicle.plate.trim() || !vehicle.color.trim() || !localLocation.trim()}

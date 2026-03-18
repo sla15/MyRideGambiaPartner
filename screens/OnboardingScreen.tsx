@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Car, Store, User, ChevronLeft, Loader2, Phone } from 'lucide-react';
+import { Car, Store, User, ChevronLeft, Loader2, Phone, MessageSquare, Timer } from 'lucide-react';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
 import { OnboardingDriverFlow } from './OnboardingDriverFlow';
@@ -21,6 +23,9 @@ export const OnboardingScreen: React.FC = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'DRIVER' | 'MERCHANT' | 'BOTH' | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [resendTimer, setResendTimer] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const steps = ((): OnboardingStep[] => {
     if (secondaryOnboardingRole === 'DRIVER') return ['DRIVER_FORM', 'DRIVER_DOCS'];
@@ -43,10 +48,35 @@ export const OnboardingScreen: React.FC = () => {
   // But for the new flow, we generally start at the beginning unless it's a secondary onboarding
   useEffect(() => {
     if (secondaryOnboardingRole !== null) return;
-
-    // If we somehow have phone but no name, we might be in the middle of this flow
-    // But usually we trust the local state 'stepIndex'
   }, [secondaryOnboardingRole]);
+
+  // Keyboard and Timer effects
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const showListener = Keyboard.addListener('keyboardWillShow', info => {
+        setKeyboardHeight(info.keyboardHeight);
+      });
+      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+        setKeyboardHeight(0);
+      });
+
+      return () => {
+        showListener.then(l => l.remove());
+        hideListener.then(l => l.remove());
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (resendTimer > 0) {
+      timerRef.current = setTimeout(() => {
+        setResendTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [resendTimer]);
 
   const currentStep = steps[stepIndex];
 
@@ -93,6 +123,7 @@ export const OnboardingScreen: React.FC = () => {
         phone: fullPhone,
       });
       if (error) throw error;
+      setResendTimer(60); // 1 minute countdown
       setStepIndex(steps.indexOf('VERIFY'));
     } catch (err: any) {
       showAlert('Error', `We couldn't send the code: ${err.message}`);
@@ -243,7 +274,10 @@ export const OnboardingScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-2 shrink-0">
+        <div 
+          className="pt-2 shrink-0 transition-all duration-300" 
+          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
+        >
           <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
             {isVerifying ? <Loader2 className="animate-spin" /> : null}
             {isVerifying ? 'Sending...' : 'Send Code'}
@@ -287,11 +321,16 @@ export const OnboardingScreen: React.FC = () => {
   const renderVerify = () => (
     <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
-        <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Verification</h2>
-        <p className="text-slate-500 text-[15px] sm:text-lg mb-6 sm:mb-10 font-medium">Verify +220 {phone}</p>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-[#00E39A]/10 flex items-center justify-center text-[#00E39A]">
+            <MessageSquare size={20} />
+          </div>
+          <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white tracking-tight leading-tight">Verification</h2>
+        </div>
+        <p className="text-slate-500 text-[15px] sm:text-lg mb-8 font-medium">We sent a code to <span className="text-slate-900 dark:text-white font-bold ml-1">+220 {phone}</span></p>
 
         <div className="flex-1 flex flex-col items-center justify-center min-h-[160px]">
-          <div className="flex gap-1.5 sm:gap-2 mb-6 w-full justify-center">
+          <div className="flex gap-2 sm:gap-3 mb-8 w-full justify-center">
             {otp.map((digit, idx) => (
               <input
                 key={idx}
@@ -302,15 +341,35 @@ export const OnboardingScreen: React.FC = () => {
                 value={digit}
                 onChange={(e) => handleOtpChange(idx, e.target.value)}
                 onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                className="w-10 sm:w-12 h-14 sm:h-16 bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-xl sm:rounded-2xl text-center text-xl sm:text-2xl font-black focus:border-[#00E39A] focus:outline-none transition-all dark:text-white"
+                className="w-11 sm:w-14 h-16 sm:h-20 bg-slate-50 dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-2xl text-center text-2xl sm:text-3xl font-black focus:border-[#00E39A] focus:ring-4 focus:ring-[#00E39A]/10 focus:outline-none transition-all dark:text-white"
+                autoFocus={idx === 0}
               />
             ))}
           </div>
-          <p className="text-slate-500 text-center text-[13px] sm:text-[15px] max-w-[220px] font-medium">Enter the 6-digit code sent to your phone.</p>
+          
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-slate-500 text-center text-[14px] font-medium">Didn't receive the code?</p>
+            {resendTimer > 0 ? (
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-zinc-900 rounded-full border border-slate-100 dark:border-zinc-800">
+                <Timer size={14} className="text-[#00E39A]" />
+                <span className="text-xs font-bold text-slate-400">Resend in {resendTimer}s</span>
+              </div>
+            ) : (
+              <button 
+                onClick={handleSendOtp}
+                className="text-[#00E39A] font-black text-sm uppercase tracking-widest hover:opacity-80 transition-opacity"
+              >
+                Resend Code
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="pt-2 shrink-0">
+      <div 
+        className="pt-2 shrink-0 transition-all duration-300"
+        style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
+      >
         <button
           onClick={handleVerifyOtp}
           disabled={isVerifying || otp.join('').length < 6}
@@ -388,10 +447,10 @@ export const OnboardingScreen: React.FC = () => {
       {currentStep === 'VERIFY' && renderVerify()}
       {currentStep === 'ROLE' && renderRoleSelection()}
       {(currentStep === 'DRIVER_FORM' || currentStep === 'DRIVER_DOCS') && (
-        <OnboardingDriverFlow step={currentStep} onNext={handleNext} />
+        <OnboardingDriverFlow step={currentStep} onNext={handleNext} keyboardHeight={keyboardHeight} />
       )}
       {(currentStep === 'MERCHANT_FORM' || currentStep === 'MERCHANT_DOCS') && (
-        <OnboardingMerchantFlow step={currentStep} onNext={handleNext} />
+        <OnboardingMerchantFlow step={currentStep} onNext={handleNext} keyboardHeight={keyboardHeight} />
       )}
     </div>
   );

@@ -11,7 +11,7 @@ interface DropdownProps {
   searchable?: boolean;
 }
 
-export const Dropdown: React.FC<DropdownProps> = ({
+export const Dropdown = React.memo(({
   label,
   value,
   options,
@@ -19,7 +19,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   containerClassName = '',
   maxHeight = '230px', // Roughly 5 rows
   searchable = false
-}) => {
+}: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -121,4 +121,4 @@ export const Dropdown: React.FC<DropdownProps> = ({
       )}
     </div>
   );
-};
+});

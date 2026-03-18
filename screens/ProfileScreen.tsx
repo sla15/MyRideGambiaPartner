@@ -362,27 +362,6 @@ export const ProfileScreen: React.FC = () => {
             </div>
           </div>
         )}
-        {/* Developer Tools / Push Test */}
-        <div className="mx-6 mt-4 mb-24 p-4 rounded-[24px] border border-dashed border-slate-300 dark:border-zinc-800">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Developer Tools</p>
-          <button
-            onClick={async () => {
-              const { data: { session } } = await supabase.auth.getSession();
-              if (session?.user) {
-                await sendPushNotification(
-                  "Partner Test ⚡",
-                  "If you see this, push notifications are working correctly for the Partner app!",
-                  role.toLowerCase() as any,
-                  session.user.id
-                );
-                showAlert('Test Notification', 'A test push request has been sent to your device.');
-              }
-            }}
-            className="w-full py-4 rounded-2xl bg-[#00E39A]/10 text-[#00E39A] font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"
-          >
-            <MessageCircle size={18} /> Test Push Notification
-          </button>
-        </div>
       </div>
     </div>
   );
