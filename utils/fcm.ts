@@ -217,9 +217,9 @@ export const syncFCMTokenToSupabase = async (userId: string, token: string) => {
     try {
         if (!userId || !token) return;
 
-        // Avoid redundant syncs if token hasn't changed
-        const lastToken = localStorage.getItem('partner_last_fcm_sync_token');
-        const lastUser = localStorage.getItem('partner_last_fcm_sync_user');
+        // Avoid redundant syncs if token hasn't changed (v3 for column revert)
+        const lastToken = localStorage.getItem('partner_last_fcm_sync_token_v3');
+        const lastUser = localStorage.getItem('partner_last_fcm_sync_user_v3');
         if (lastToken === token && lastUser === userId) {
             console.log('📡 FCM: Token already synced, skipping.');
             return;
@@ -234,8 +234,8 @@ export const syncFCMTokenToSupabase = async (userId: string, token: string) => {
             console.error('❌ FCM: Sync failed:', error);
         } else {
             console.log('✅ FCM: Token synced to Supabase');
-            localStorage.setItem('partner_last_fcm_sync_token', token);
-            localStorage.setItem('partner_last_fcm_sync_user', userId);
+            localStorage.setItem('partner_last_fcm_sync_token_v3', token);
+            localStorage.setItem('partner_last_fcm_sync_user_v3', userId);
         }
     } catch (err) {
         console.error('❌ FCM: Sync exception:', err);

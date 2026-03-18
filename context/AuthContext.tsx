@@ -14,6 +14,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
 
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
@@ -24,12 +25,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
             setLoading(false);
+
             // Initialize FCM on sign-in events (SIGNED_IN, TOKEN_REFRESHED)
-            if (session?.user && _event === 'SIGNED_IN') {
-                initFCM(session.user.id).catch(console.error);
+            if (currentUser && _event === 'SIGNED_IN') {
+                initFCM(currentUser.id).catch(console.error);
             }
         });
 
