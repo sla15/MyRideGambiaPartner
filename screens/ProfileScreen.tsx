@@ -73,7 +73,7 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-black transition-colors duration-300 overflow-hidden">
-      <div className="flex items-center gap-4 px-6 pt-14 pb-6 shrink-0 z-10 bg-white dark:bg-[#121212] border-b border-slate-100 dark:border-zinc-900 transition-colors">
+      <div className="flex items-center gap-4 px-6 pt-safe pb-6 shrink-0 z-10 bg-white dark:bg-[#121212] border-b border-slate-100 dark:border-zinc-900 transition-colors">
         <button onClick={handleBack} className="w-11 h-11 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-900 dark:text-white active:scale-90 transition-transform"><ArrowLeft size={22} /></button>
         <div className="flex-1 text-center font-black text-slate-900 dark:text-white text-xl mr-11 tracking-tight">Profile</div>
       </div>

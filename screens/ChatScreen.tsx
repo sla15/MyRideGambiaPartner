@@ -29,7 +29,7 @@ export const ChatScreen: React.FC = () => {
   return (
     <div className="absolute inset-0 z-50 bg-white dark:bg-black flex flex-col animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md pt-14 pb-3 px-4 flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 shrink-0">
+      <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md pt-safe pb-3 px-4 flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 shrink-0">
         <div className="flex items-center gap-2">
             <button onClick={closeChat} className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors">
                 <ChevronLeft size={24} className="text-partner-green" />

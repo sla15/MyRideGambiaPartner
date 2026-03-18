@@ -150,7 +150,7 @@ export const ProductManagement: React.FC = () => {
     return (
         <div className="h-full flex flex-col bg-gray-50 dark:bg-black">
             {/* Fixed Header */}
-            <div className="px-6 pt-14 pb-4 flex justify-between items-center bg-gray-50 dark:bg-black shrink-0 z-10">
+            <div className="px-6 pt-safe pb-4 flex justify-between items-center bg-gray-50 dark:bg-black shrink-0 z-10">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Products</h1>
                 <button
                     onClick={() => setIsModalOpen(true)}

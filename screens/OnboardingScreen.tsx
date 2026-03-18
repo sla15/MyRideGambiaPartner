@@ -23,7 +23,6 @@ export const OnboardingScreen: React.FC = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'DRIVER' | 'MERCHANT' | 'BOTH' | null>(null);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [resendTimer, setResendTimer] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,22 +49,6 @@ export const OnboardingScreen: React.FC = () => {
     if (secondaryOnboardingRole !== null) return;
   }, [secondaryOnboardingRole]);
 
-  // Keyboard and Timer effects
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const showListener = Keyboard.addListener('keyboardWillShow', info => {
-        setKeyboardHeight(info.keyboardHeight);
-      });
-      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
-        setKeyboardHeight(0);
-      });
-
-      return () => {
-        showListener.then(l => l.remove());
-        hideListener.then(l => l.remove());
-      };
-    }
-  }, []);
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -255,7 +238,7 @@ export const OnboardingScreen: React.FC = () => {
   const renderPhoneInput = () => {
     const canContinue = phone.length >= 7;
     return (
-      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-8 pt-safe pb-safe h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
         <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
           <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Enter your phone</h2>
           <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">We'll send you a code to verify it.</p>
@@ -274,10 +257,7 @@ export const OnboardingScreen: React.FC = () => {
           </div>
         </div>
 
-        <div 
-          className="pt-2 shrink-0 transition-all duration-300" 
-          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
-        >
+        <div className="pt-2 shrink-0 transition-all duration-300">
           <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
             {isVerifying ? <Loader2 className="animate-spin" /> : null}
             {isVerifying ? 'Sending...' : 'Send Code'}
@@ -293,7 +273,7 @@ export const OnboardingScreen: React.FC = () => {
     const canContinue = name.trim().length >= 3;
 
     return (
-      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-8 pt-safe pb-safe h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
         <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
           <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1 tracking-tight leading-tight">Tell us about yourself</h2>
           <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">Your data is stored securely with your profile.</p>
@@ -319,7 +299,7 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   const renderVerify = () => (
-    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-8 pt-safe pb-safe h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-[#00E39A]/10 flex items-center justify-center text-[#00E39A]">
@@ -366,10 +346,7 @@ export const OnboardingScreen: React.FC = () => {
         </div>
       </div>
 
-      <div 
-        className="pt-2 shrink-0 transition-all duration-300"
-        style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
-      >
+      <div className="pt-2 shrink-0 transition-all duration-300">
         <button
           onClick={handleVerifyOtp}
           disabled={isVerifying || otp.join('').length < 6}
@@ -386,7 +363,7 @@ export const OnboardingScreen: React.FC = () => {
   );
 
   const renderRoleSelection = () => (
-    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-16 sm:pt-20 h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
+    <div className="px-6 sm:px-8 pb-6 sm:pb-10 pt-8 pt-safe pb-safe h-full flex flex-col bg-white dark:bg-black overflow-hidden animate-in slide-in-from-right duration-500">
       <div className="flex-1 overflow-y-auto no-scrollbar pb-4 flex flex-col">
         <h2 className="text-[32px] sm:text-[34px] font-black text-slate-900 dark:text-white mb-1.5 tracking-tight leading-tight">Select your role</h2>
         <p className="text-slate-500 text-[14px] sm:text-[15px] mb-8 font-medium">This determines your partner dashboard.</p>
@@ -447,10 +424,10 @@ export const OnboardingScreen: React.FC = () => {
       {currentStep === 'VERIFY' && renderVerify()}
       {currentStep === 'ROLE' && renderRoleSelection()}
       {(currentStep === 'DRIVER_FORM' || currentStep === 'DRIVER_DOCS') && (
-        <OnboardingDriverFlow step={currentStep} onNext={handleNext} keyboardHeight={keyboardHeight} />
+        <OnboardingDriverFlow step={currentStep} onNext={handleNext} />
       )}
       {(currentStep === 'MERCHANT_FORM' || currentStep === 'MERCHANT_DOCS') && (
-        <OnboardingMerchantFlow step={currentStep} onNext={handleNext} keyboardHeight={keyboardHeight} />
+        <OnboardingMerchantFlow step={currentStep} onNext={handleNext} />
       )}
     </div>
   );

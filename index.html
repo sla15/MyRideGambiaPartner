@@ -3,7 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>DROPOFF Driver and Business</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -29,7 +31,7 @@
     }
   </script>
   <style>
-    /* Ensure root takes full height and handles safe areas */
+    /* Ensure root takes full height */
     html,
     body,
     #root {
@@ -38,12 +40,26 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      /* Support for iOS Safe Areas */
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
       box-sizing: border-box;
+    }
+
+    body {
+      position: fixed;
+      inset: 0;
+    }
+
+    /* Safe Area Utilities (matching Dropoff app) */
+    .pt-safe {
+      padding-top: calc(env(safe-area-inset-top) + 1.25rem);
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .mt-safe {
+      margin-top: env(safe-area-inset-top);
+    }
+    .mb-safe {
+      margin-bottom: env(safe-area-inset-bottom);
     }
 
     /* Hide scrollbar for clean mobile feel */
@@ -69,8 +85,8 @@
 </head>
 
 <body
-  class="bg-partner-bg dark:bg-partner-darkBg text-slate-900 dark:text-white transition-colors duration-300 antialiased overflow-hidden">
-  <div id="root"></div>
+  class="bg-partner-bg dark:bg-partner-darkBg text-slate-900 dark:text-white transition-colors duration-300 antialiased overflow-hidden fixed inset-0">
+  <div id="root" class="h-full w-full"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 

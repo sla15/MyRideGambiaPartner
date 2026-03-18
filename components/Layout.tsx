@@ -69,8 +69,7 @@ export const Layout: React.FC = () => {
   return (
     <div className={`flex flex-col h-full w-full overflow-hidden relative transition-colors duration-300 
       ${isLocked ? 'border-4 border-red-600' : ''} 
-      ${isDarkMode ? 'bg-black text-white' : 'bg-white text-slate-900'}
-      pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]`}>
+      ${isDarkMode ? 'bg-black text-white' : 'bg-white text-slate-900'}`}>
       <NotificationBanner />
 
       {/* Screen Content */}

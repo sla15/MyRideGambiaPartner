@@ -21,6 +21,7 @@ const AppContent: React.FC = () => {
           // Status Bar
           await StatusBar.setOverlaysWebView({ overlay: true });
           await StatusBar.setStyle({ style: isDarkMode ? Style.Dark : Style.Light });
+          await StatusBar.setBackgroundColor({ color: 'transparent' });
           
           // Keyboard
           if (Capacitor.getPlatform() === 'ios') {

@@ -11,13 +11,12 @@ import { supabase } from '../lib/supabase';
 interface OnboardingMerchantFlowProps {
   step: OnboardingStep;
   onNext: (data?: any) => void;
-  keyboardHeight?: number;
 }
 
 const DARK_MAP_STYLES = [{ elementType: "geometry", stylers: [{ color: "#242f3e" }] }, { featureType: "road", elementType: "geometry", stylers: [{ color: "#38414e" }] }];
 const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ step, onNext, keyboardHeight = 0 }) => {
+export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ step, onNext }) => {
   const { updateProfile, isDarkMode, uploadFile, profile, showAlert } = useApp();
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -220,7 +219,7 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
   if (step === 'MERCHANT_FORM') {
     return (
       <div className="px-8 pb-10 h-full flex flex-col bg-white dark:bg-black animate-in slide-in-from-right duration-500 overflow-hidden">
-        <div className="shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}>
+        <div className="shrink-0 pt-8">
           <h2 className="text-[34px] font-black dark:text-white mb-1.5 tracking-tight leading-tight">Business Details</h2>
           <p className="text-slate-500 text-lg mb-8 font-medium">Complete your store setup.</p>
         </div>
@@ -330,7 +329,6 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
           onClick={handleNextWithData}
           disabled={isUploading !== null || isCheckingName}
           className="w-full font-bold py-5 rounded-[22px] mt-6 bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300"
-          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
         >
           {isCheckingName && <Loader2 className="animate-spin" size={20} />}
           Complete Setup
@@ -407,8 +405,8 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
   }
 
   return (
-    <div className="px-8 pb-10 h-full flex flex-col bg-white dark:bg-black animate-in slide-in-from-right duration-500">
-      <div className="shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}>
+    <div className="px-8 pb-10 h-full flex flex-col bg-white dark:bg-black pt-safe pb-safe animate-in slide-in-from-right duration-500">
+      <div className="shrink-0 pt-8">
         <h2 className="text-[34px] font-black dark:text-white mb-1.5 tracking-tight leading-tight">Verification</h2>
         <p className="text-slate-500 text-lg mb-8 font-medium">Upload your National ID Card.</p>
       </div>

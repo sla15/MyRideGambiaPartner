@@ -165,7 +165,7 @@ export const DriverHome: React.FC = () => {
             )}
 
             {profile.isOnline && (
-                <div className="absolute top-4 right-6 z-30">
+                <div className="absolute right-6 z-30 pt-safe">
                     <button onClick={handleToggleOnline} className="w-12 h-12 rounded-full bg-white dark:bg-[#1C1C1E] text-red-500 shadow-xl flex items-center justify-center active:scale-90 transition-transform"><Power size={20} /></button>
                 </div>
             )}

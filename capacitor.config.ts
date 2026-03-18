@@ -9,7 +9,7 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"],
     },
     Keyboard: {
-      resize: "native",
+      resize: "body" as any,
       resizeOnFullScreen: true,
     },
   },

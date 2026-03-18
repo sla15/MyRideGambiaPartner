@@ -91,7 +91,7 @@ export const ManualPaymentScreen: React.FC<ManualPaymentScreenProps> = ({ onBack
     return (
         <div className={`flex-1 flex flex-col ${isDarkMode ? 'bg-zinc-950' : 'bg-slate-50'} animate-in slide-in-from-right duration-300`}>
             {/* Header */}
-            <div className={`px-6 pb-6 flex items-center gap-4 ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'} border-b shadow-sm`} style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 24px)' }}>
+            <div className={`px-6 pb-6 flex items-center gap-4 ${isDarkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-slate-200'} border-b shadow-sm`} style={{ paddingTop: '24px' }}>
                 <button onClick={onBack} className={`p-2 rounded-xl ${isDarkMode ? 'bg-zinc-800 text-white' : 'bg-slate-100 text-slate-600'}`}>
                     <ArrowLeft size={20} />
                 </button>
@@ -212,7 +212,7 @@ export const ManualPaymentScreen: React.FC<ManualPaymentScreenProps> = ({ onBack
             </div>
 
             {/* Submit Button */}
-            <div className={`px-6 pb-8 ${isDarkMode ? 'bg-zinc-900/80 border-t border-zinc-800' : 'bg-white/80 border-t border-slate-100'} backdrop-blur-lg`} style={{ paddingTop: '20px', paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 20px)' }}>
+            <div className={`px-6 pb-8 ${isDarkMode ? 'bg-zinc-900/80 border-t border-zinc-800' : 'bg-white/80 border-t border-slate-100'} backdrop-blur-lg`} style={{ paddingTop: '20px', paddingBottom: '20px' }}>
                 {cooldownSeconds > 0 && (
                     <div className="flex items-center justify-center gap-2 mb-4">
                         <Clock size={16} className="text-amber-500" />

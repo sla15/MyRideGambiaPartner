@@ -10,10 +10,9 @@ import { UserProfile } from '../types';
 interface OnboardingDriverFlowProps {
   step: OnboardingStep;
   onNext: (data?: any) => void;
-  keyboardHeight?: number;
 }
 
-export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step, onNext, keyboardHeight = 0 }) => {
+export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step, onNext }) => {
   const { updateProfile, uploadFile, profile } = useApp();
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
@@ -131,10 +130,7 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
           </div>
         </div>
 
-        <div 
-          className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent transition-all duration-300"
-          style={{ marginBottom: keyboardHeight > 0 ? keyboardHeight - 20 : 0 }}
-        >
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent transition-all duration-300">
           <button
             onClick={() => { updateProfile({ vehicle, location: localLocation }); onNext(); }}
             disabled={isUploading !== null || !vehicle.model.trim() || !vehicle.plate.trim() || !vehicle.color.trim() || !localLocation.trim()}
@@ -151,8 +147,8 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-black animate-in slide-in-from-right duration-500 relative">
-      <div className="px-8 pb-4 shrink-0" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 64px)' }}>
+    <div className="flex flex-col h-full bg-white dark:bg-black pt-safe pb-safe animate-in slide-in-from-right duration-500 relative">
+      <div className="px-8 pb-4 shrink-0 pt-8">
         <h2 className="text-[34px] font-black dark:text-white mb-1.5 tracking-tight leading-tight">Verification</h2>
         <p className="text-slate-500 text-lg font-medium">Upload photos for verification.</p>
       </div>

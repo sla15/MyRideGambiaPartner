@@ -99,7 +99,7 @@ export const MerchantOrders: React.FC = () => {
     return (
         <div className="flex flex-col h-full bg-gray-50 dark:bg-black">
             {/* Fixed Header */}
-            <div className="px-6 pt-14 pb-4 shrink-0 bg-gray-50 dark:bg-black z-10">
+            <div className="px-6 pt-safe pb-4 shrink-0 bg-gray-50 dark:bg-black z-10">
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Orders</h1>
 
                 {/* Filter Pills */}

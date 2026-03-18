@@ -26,7 +26,7 @@ export const WalletScreen: React.FC = () => {
     <div className={`h-full flex flex-col transition-colors overflow-hidden ${isLocked ? 'bg-red-50 dark:bg-red-950/20' : 'bg-slate-50 dark:bg-black'}`}>
       {/* Universal Header */}
       {!showManualPayment && (
-        <div className={`px-6 pt-14 pb-4 flex items-center justify-between shrink-0 z-10 border-b transition-colors ${isLocked ? 'bg-red-100 dark:bg-black border-red-200 dark:border-red-900/30' : 'bg-white dark:bg-black border-slate-100 dark:border-zinc-800'}`}>
+        <div className={`px-6 pt-safe pb-4 flex items-center justify-between shrink-0 z-10 border-b transition-colors ${isLocked ? 'bg-red-100 dark:bg-black border-red-200 dark:border-red-900/30' : 'bg-white dark:bg-black border-slate-100 dark:border-zinc-800'}`}>
           <button
             onClick={handleBack}
             disabled={isLocked}
