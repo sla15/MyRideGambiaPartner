@@ -22,6 +22,22 @@ export const Layout: React.FC = () => {
     }
   }, [isLocked, currentTab, setCurrentTab]);
 
+  // Notification Deep Linking
+  React.useEffect(() => {
+    const handleNotificationTap = (e: any) => {
+      const data = e.detail;
+      console.log("👆 Partner Notification tapped, routing to:", data);
+      if (data?.type === 'NEW_ORDER' && role === 'MERCHANT') {
+        setCurrentTab('orders');
+      } else if ((data?.type === 'ride_update' || data?.type === 'ride_request' || data?.ride_id) && role === 'DRIVER') {
+        setCurrentTab('home');
+      }
+    };
+
+    window.addEventListener('notification_tapped', handleNotificationTap);
+    return () => window.removeEventListener('notification_tapped', handleNotificationTap);
+  }, [role, setCurrentTab]);
+
   // Hardware Back Button Handling
   React.useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
