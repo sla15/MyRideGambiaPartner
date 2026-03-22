@@ -188,17 +188,39 @@ export const useRideLifecycle = (
         try {
             setRideStatus('COMPLETED');
             setIsDrawerExpanded(true);
+
+            // Extract only plain primitives — avoids circular-reference errors when
+            // Supabase serialises the request body on multi-stop rides where
+            // currentRide may carry marker/event-listener references.
+            const rideId = String(currentRide.id);
+            const driverId = String(user.id);
+            const actualLat = Number(profile.currentLat) || 0;
+            const actualLng = Number(profile.currentLng) || 0;
+            const isAutoFlag = Boolean(isAuto);
+
             const { data, error } = await supabase.rpc('complete_ride', {
-                p_ride_id: currentRide.id,
-                p_driver_id: user.id,
-                p_actual_lat: profile.currentLat || 0,
-                p_actual_lng: profile.currentLng || 0,
-                p_is_auto: isAuto
+                p_ride_id: rideId,
+                p_driver_id: driverId,
+                p_actual_lat: actualLat,
+                p_actual_lng: actualLng,
+                p_is_auto: isAutoFlag
             });
-            if (error) throw error;
-            if (!data.success) throw new Error(data.error);
+            if (error) throw new Error(error.message || 'RPC error');
+            if (!data.success) throw new Error(String(data.error || 'Ride completion failed'));
 
             setCurrentRide(prev => prev ? { ...prev, price: data.final_price } : null);
+
+            // Show fare summary + rate customer modal immediately on ride completion
+            setHasCollectedPayment(false);
+            setUserRating(0);
+            setShowRatingModal(true);
+
+            // Persist today's earnings to localStorage (date-keyed, auto-resets on new day)
+            try {
+                const todayKey = `todayEarnings_${new Date().toISOString().slice(0, 10)}`;
+                const existing = parseFloat(localStorage.getItem(todayKey) || '0');
+                localStorage.setItem(todayKey, String(existing + (data.final_price || 0)));
+            } catch (_) {}
 
             const isDelivery = currentRide.type === 'DELIVERY' || currentRide.type === 'MERCHANT_DELIVERY';
             if (data.final_price > 0) {
@@ -216,12 +238,16 @@ export const useRideLifecycle = (
             }
             await syncProfile();
         } catch (e: any) {
-            console.error("Error completing ride via RPC:", e);
-            pushNotification('Error', e.message || 'Failed to complete ride properly.', 'SYSTEM');
+            // Safely extract just the message — never serialize the full error object
+            // (Supabase / fetch errors can hold Window references causing circular JSON)
+            const msg = e?.message || e?.error_description || 'Failed to complete ride properly.';
+            console.error('Error completing ride via RPC:', msg);
+            pushNotification('Error', msg, 'SYSTEM');
         } finally {
             setIsProcessing(false);
         }
     };
+
 
     const submitRating = async () => {
         if (currentRide && user) {

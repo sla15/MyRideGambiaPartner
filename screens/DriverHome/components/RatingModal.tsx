@@ -31,12 +31,22 @@ export const RatingModal: React.FC<RatingModalProps> = ({
         <div className="absolute inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in">
             <div className="bg-white dark:bg-[#1C1C1E] w-full max-w-sm rounded-[2rem] p-6 text-center shadow-2xl relative">
                 <button onClick={handleSkipRating} className="absolute top-4 right-4 p-2 text-gray-400"><X size={24} /></button>
+
+                {/* Customer Avatar */}
                 <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg">
-                    <img
-                        src={currentRide?.passengerImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentRide?.passengerName}`}
-                        alt="User"
-                        className="w-full h-full object-cover"
-                    />
+                    {currentRide?.passengerImage ? (
+                        <img
+                            src={currentRide.passengerImage}
+                            alt="User"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-[#00E39A] flex items-center justify-center">
+                            <span className="text-black font-black text-2xl">
+                                {currentRide?.passengerName?.charAt(0)?.toUpperCase() || 'U'}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {!hasCollectedPayment ? (
@@ -61,19 +71,24 @@ export const RatingModal: React.FC<RatingModalProps> = ({
 
                         <div className="bg-[#00E39A]/10 dark:bg-[#00E39A]/5 rounded-2xl py-6 px-4 mb-6 border border-[#00E39A]/20">
                             <p className="text-[10px] text-[#00E39A] uppercase font-black tracking-widest mb-1">Final Amount</p>
-                            <p className="text-4xl font-black text-[#00E39A]">{appSettings.currency_symbol}{currentRide?.price?.toFixed(2)}</p>
-                            <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">Confirm payment from {currentRide?.type === 'PASSENGER' ? currentRide?.passengerName : 'Customer'}</p>
+                            <p className="text-4xl font-black text-[#00E39A]">{appSettings.currency_symbol}{Math.ceil(currentRide?.price || 0)}</p>
+                            <p className="text-[10px] text-gray-400 font-bold mt-1 uppercase">
+                                Collect from {currentRide?.type === 'PASSENGER' ? (currentRide?.passengerName || 'Passenger') : 'Customer'}
+                            </p>
                         </div>
+
                         <button
                             onClick={() => setHasCollectedPayment(true)}
                             className="w-full py-4 rounded-2xl font-bold bg-[#00E39A] text-black shadow-lg uppercase tracking-widest active:scale-95 transition-transform"
                         >
-                            Confirm Payment Received
+                            OK, I Got Paid
                         </button>
                     </>
                 ) : (
                     <>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Rate {currentRide?.type === 'PASSENGER' ? currentRide?.passengerName : 'Customer'}</h3>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                            Rate {currentRide?.type === 'PASSENGER' ? (currentRide?.passengerName || 'Passenger') : 'Customer'}
+                        </h3>
                         <div className="flex justify-center gap-2 mb-8 mt-4">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button key={star} onClick={() => setUserRating(star)}>
