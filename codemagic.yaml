@@ -42,7 +42,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - dropoffgm@gmail.com
+          - sladibba15@gmail.com
         notify:
           success: true
           failure: true
@@ -79,7 +79,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - dropoffgm@gmail.com
+          - sladibb15@gmail.com
         notify:
           success: true
           failure: true
