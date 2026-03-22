@@ -172,16 +172,26 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
                                 </div>
                             ) : rideStatus === 'COMPLETED' ? (
                                 <div className="animate-in zoom-in duration-300 flex flex-col items-end">
-                                    D{Math.ceil(currentRide.price)}
+                                    <div className="text-gray-900 dark:text-white text-2xl font-black">D{Math.ceil(currentRide.price)}</div>
                                     <div className="text-gray-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
                                         <CheckCircle size={10} className="text-[#00E39A]" />
                                         {rideType === 'DELIVERY' ? 'Delivery Complete' : 'Ride Complete'}
                                     </div>
                                 </div>
-                            ) : (
+                            ) : rideStatus === 'RINGING' ? (
                                 <>
                                     <div className="text-[#00E39A] text-3xl font-bold tracking-tight">D{currentRide.price}</div>
                                     <div className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{rideType === 'DELIVERY' ? 'Delivery Fee' : 'Estimated Fare'}</div>
+                                </>
+                            ) : (rideStatus === 'ACCEPTED' || rideStatus === 'ARRIVED') ? (
+                                <div className="flex flex-col items-end">
+                                    <div className="text-blue-500 dark:text-blue-400 text-sm font-black uppercase tracking-widest">{rideStatus === 'ACCEPTED' ? 'To Pickup' : 'At Pickup'}</div>
+                                    <div className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{currentRide.pickupDistance} Away</div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="text-[#00E39A] text-3xl font-bold tracking-tight">D{currentRide.price}</div>
+                                    <div className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{rideType === 'DELIVERY' ? 'Fee' : 'Price'}</div>
                                 </>
                             )}
                         </div>

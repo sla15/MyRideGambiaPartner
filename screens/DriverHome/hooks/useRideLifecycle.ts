@@ -57,9 +57,13 @@ export const useRideLifecycle = (
     const handleAcceptRide = async () => {
         if (!currentRide || !user) return;
 
+        // Optimistically set status to ACCEPTED to prevent the "silent removal" 
+        // listener in the useEffect below from clearing the state.
+        const originalStatus = rideStatus;
+        setRideStatus('ACCEPTED');
         setIsProcessing(true);
+
         try {
-            // Optimistically mark as accepted in UI only AFTER db confirms it
             // .select('id') returns the updated rows — if empty, the ride was already taken/cancelled
             const { data: updatedRows, error } = await supabase
                 .from('rides')
@@ -69,8 +73,9 @@ export const useRideLifecycle = (
                 .select('id');
 
             if (error || !updatedRows || updatedRows.length === 0) {
-                // Ride was already taken by another driver or customer cancelled
+                // REVERT: Ride was already taken by another driver or customer cancelled
                 console.warn("[handleAcceptRide] Ride unavailable (no rows updated or error):", error);
+                setRideStatus(originalStatus); // Return to RINGING
                 showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
 
                 // Remove stale ride from the queue and show the next one
@@ -88,8 +93,7 @@ export const useRideLifecycle = (
                 return;
             }
 
-            // DB confirmed — now update local UI state
-            setRideStatus('ACCEPTED');
+            // DB confirmed — status is already set to ACCEPTED optimistically
 
             // If it's a merchant delivery, sync the associated orders to "delivering"
             if (currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY') {
@@ -120,6 +124,10 @@ export const useRideLifecycle = (
             const isDelivery = currentRide.type === 'DELIVERY' || currentRide.type === 'MERCHANT_DELIVERY';
             pushNotification(isDelivery ? 'Delivery Accepted' : 'Ride Accepted', `Navigating to pickup`, 'SYSTEM');
             setIncomingRides([]); // Clear the queue since we accepted one
+        } catch (err) {
+            console.error("[handleAcceptRide] critical error:", err);
+            setRideStatus(originalStatus); // Rollback on critical error
+            showAlert('Error', 'An unexpected error occurred while accepting the ride.');
         } finally {
             setIsProcessing(false);
         }
@@ -251,7 +259,7 @@ export const useRideLifecycle = (
     const handleDeclineRide = () => {
         if (!currentRide) return;
 
-        setRejectedRideIds((prev: Set<string>) => new Set(prev).add(currentRide.id));
+        setRejectedRideIds(currentRide.id);
 
         // Remove from local queue
         const remaining = incomingRides.filter(r => r.id !== currentRide.id);
@@ -309,11 +317,13 @@ export const useRideLifecycle = (
     // Watcher: if the currently shown ride is removed from incomingRides[] by ProfileContext
     // (because another driver accepted it OR customer cancelled), dismiss the drawer immediately.
     useEffect(() => {
-        if (!currentRide || rideStatus !== 'RINGING') return;
+        if (!currentRide || (rideStatus !== 'RINGING' && rideStatus !== 'IDLE')) return;
         const isStillInQueue = incomingRides.some(r => r.id === currentRide.id);
         if (!isStillInQueue) {
-            // Ride was silently taken or cancelled — close drawer now and show alert
-            showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
+            // ONLY show alert if it was a "surprise" removal while it was ringing
+            if (rideStatus === 'RINGING') {
+                showAlert('Ride Unavailable', 'This request has already been taken by another driver or was cancelled.');
+            }
 
             if (incomingRides.length > 0) {
                 setCurrentRide(incomingRides[0]);

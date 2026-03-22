@@ -47,7 +47,7 @@ interface ProfileContextType {
         update_url_partner_ios: string;
     };
     rejectedRideIds: Set<string>;
-    setRejectedRideIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+    setRejectedRideIds: (id: string) => void;
     isLocked: boolean;
     lockReason: 'DEBT_LIMIT' | 'SUSPENDED' | null;
     isLoading: boolean;
@@ -670,8 +670,16 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     useEffect(() => {
         profileRef.current = profile;
-        rejectedRideIdsRef.current = rejectedRideIds;
-    }, [profile, rejectedRideIds]);
+    }, [profile]);
+
+    const addToRejectedRides = useCallback((id: string) => {
+        console.log("[ProfileContext] Adding to rejected rides:", id);
+        setRejectedRideIds(prev => {
+            const next = new Set(prev).add(id);
+            rejectedRideIdsRef.current = next;
+            return next;
+        });
+    }, []);
 
     useEffect(() => {
         if (!user || role !== 'DRIVER' || !profile.isOnline) return;
@@ -942,12 +950,15 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         merchants: merchants,
                         merchantPhone: merchants[0]?.phone,
                         businessName: merchants[0]?.name,
-                        dbStatus: newRide.status,
-                        status: newRide.status,
                         batch_id: newRide.batch_id
                     } as any;
 
                     setIncomingRides(prev => {
+                        // DO NOT add if it was rejected while we were fetching passenger details
+                        if (rejectedRideIdsRef.current.has(rideToAdd.id)) {
+                            return prev;
+                        }
+
                         const existingIndex = prev.findIndex(r => r.id === rideToAdd.id);
                         if (existingIndex !== -1) {
                             const updated = [...prev];
@@ -957,7 +968,8 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
                         return [...prev, rideToAdd];
                     });
 
-                    if (currentRide?.id === rideToAdd.id) {
+                    // Only set as current ride if it wasn't rejected
+                    if (currentRide?.id === rideToAdd.id && !rejectedRideIdsRef.current.has(rideToAdd.id)) {
                         setCurrentRide(rideToAdd);
                     }
                 };
@@ -1392,7 +1404,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
             toggleOnlineStatus, payCommission, signOut, uploadFile, loadUserData, syncProfile, updateActiveRole,
             requestAccountDeletion, submitManualPayment, pendingManualPayment,
             rideStats, orderStats, incomingRides, setIncomingRides,
-            rejectedRideIds, setRejectedRideIds,
+            rejectedRideIds, setRejectedRideIds: addToRejectedRides,
             appSettings,
             isLocked: (profile.commissionDebt >= appSettings.max_driver_cash_amount) || profile.isSuspended,
             lockReason: profile.isSuspended ? 'SUSPENDED' : (profile.commissionDebt >= appSettings.max_driver_cash_amount ? 'DEBT_LIMIT' : null),

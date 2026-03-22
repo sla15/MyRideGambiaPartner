@@ -195,7 +195,7 @@ const initWebPush = async (
                     body,
                     icon: '/assets/logo.png',
                     badge: '/assets/logo.png',
-                    tag: data?.type || 'default',
+                    // Removed 'tag' to ensure all notifications stack as requested
                     data,
                 });
                 n.onclick = () => { window.focus(); n.close(); };

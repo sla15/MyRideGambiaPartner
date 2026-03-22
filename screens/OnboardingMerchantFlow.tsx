@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Geolocation } from '@capacitor/geolocation';
 import { useApp } from '../context/AppContext';
+import { useUI } from '../context/UIContext';
 import { Store, Upload, X, MapPin, Navigation, Loader2, Plus, Clock, CheckCircle, Globe, Compass, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
@@ -18,6 +19,7 @@ const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ step, onNext }) => {
   const { updateProfile, isDarkMode, uploadFile, profile, showAlert } = useApp();
+  const { keyboardHeight } = useUI();
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
@@ -218,7 +220,7 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
 
   if (step === 'MERCHANT_FORM') {
     return (
-      <div className="px-8 pb-10 h-full flex flex-col bg-white dark:bg-black animate-in slide-in-from-right duration-500 overflow-hidden">
+      <div className="px-8 flex flex-col h-full bg-white dark:bg-black animate-in slide-in-from-right duration-500 overflow-hidden">
         <div className="shrink-0 pt-8">
           <h2 className="text-[34px] font-black dark:text-white mb-1.5 tracking-tight leading-tight">Business Details</h2>
           <p className="text-slate-500 text-lg mb-8 font-medium">Complete your store setup.</p>
@@ -325,14 +327,16 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
           </div>
         </div>
 
-        <button
-          onClick={handleNextWithData}
-          disabled={isUploading !== null || isCheckingName}
-          className="w-full font-bold py-5 rounded-[22px] mt-6 bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl shrink-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300"
-        >
-          {isCheckingName && <Loader2 className="animate-spin" size={20} />}
-          Complete Setup
-        </button>
+        <div className="shrink-0 pt-4 pb-6 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
+          <button
+            onClick={handleNextWithData}
+            disabled={isUploading !== null || isCheckingName}
+            className="w-full font-bold py-5 rounded-[22px] bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300"
+          >
+            {isCheckingName && <Loader2 className="animate-spin" size={20} />}
+            Complete Setup
+          </button>
+        </div>
 
         {/* Pin Store Options Overlay */}
         {merchantLocMode === 'OPTIONS' && (
@@ -429,7 +433,7 @@ export const OnboardingMerchantFlow: React.FC<OnboardingMerchantFlowProps> = ({ 
         </p>
       </div>
 
-      <div className="mt-auto space-y-3">
+      <div className="mt-auto space-y-3 shrink-0 pt-4 pb-10 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
         <button
           onClick={() => onNext({ business })}
           disabled={isUploading !== null}

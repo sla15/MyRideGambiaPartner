@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUI } from '../context/UIContext';
 import { Car, Store, User, ChevronLeft, Loader2, Phone, MessageSquare, Timer } from 'lucide-react';
 import { Keyboard } from '@capacitor/keyboard';
 import { Capacitor } from '@capacitor/core';
@@ -14,6 +15,7 @@ export type OnboardingStep = 'WELCOME' | 'PHONE_INPUT' | 'VERIFY' | 'INFO' | 'RO
 
 export const OnboardingScreen: React.FC = () => {
   const { updateProfile, completeOnboarding, setRole, secondaryOnboardingRole, cancelSecondaryOnboarding, profile, setCurrentTab, loadUserData, showAlert } = useApp();
+  const { keyboardHeight } = useUI();
   const [stepIndex, setStepIndex] = useState(0);
 
   const [name, setName] = useState('');
@@ -226,7 +228,7 @@ export const OnboardingScreen: React.FC = () => {
           <p className="text-slate-500 text-xl max-w-[280px] leading-relaxed font-medium">Partner with the network. Drive or Sell in The Gambia.</p>
         </div>
       </div>
-      <div className="space-y-6 shrink-0">
+      <div className="space-y-6 shrink-0 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
         <button onClick={() => setStepIndex(steps.indexOf('PHONE_INPUT'))} className="w-full bg-[#00E39A] text-slate-900 font-black text-[20px] py-5 rounded-[24px] shadow-lg active:scale-[0.97] transition-all">Get Started</button>
         <p className="text-center text-[11px] text-slate-400 font-medium px-4 leading-relaxed">
           By continuing you have agreed to our <a href="https://superapp-hub.vercel.app/terms" target="_blank" rel="noopener noreferrer" className="underline">Terms of Services</a> and <a href="https://superapp-hub.vercel.app/privacy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>.
@@ -257,7 +259,7 @@ export const OnboardingScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-2 shrink-0 transition-all duration-300">
+        <div className="pt-2 shrink-0 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
           <button onClick={handleSendOtp} disabled={!canContinue || isVerifying} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg flex items-center justify-center gap-2 ${canContinue && !isVerifying ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>
             {isVerifying ? <Loader2 className="animate-spin" /> : null}
             {isVerifying ? 'Sending...' : 'Send Code'}
@@ -285,7 +287,7 @@ export const OnboardingScreen: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="pt-2 shrink-0">
+        <div className="pt-2 shrink-0 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
           <button onClick={() => {
             // Save profile details to DB immediately to avoid loss
             updateProfile({ name, age: parseInt(age), gender: gender });
@@ -346,7 +348,7 @@ export const OnboardingScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="pt-2 shrink-0 transition-all duration-300">
+      <div className="pt-2 shrink-0 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
         <button
           onClick={handleVerifyOtp}
           disabled={isVerifying || otp.join('').length < 6}
@@ -386,7 +388,7 @@ export const OnboardingScreen: React.FC = () => {
         </div>
       </div>
 
-      <div className="pt-2 shrink-0">
+      <div className="pt-2 shrink-0 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
         <button onClick={() => handleNext()} disabled={!selectedRole} className={`w-full font-black py-4 sm:py-5 rounded-[22px] transition-all text-[17px] sm:text-lg ${selectedRole ? 'bg-slate-900 dark:bg-white text-white dark:text-black shadow-xl active:scale-[0.98]' : 'bg-slate-100 text-slate-300'}`}>Continue</button>
       </div>
     </div>

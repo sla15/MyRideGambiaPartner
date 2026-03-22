@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useUI } from '../context/UIContext';
 import { Upload, Camera, Car, User, Loader2, CheckCircle, Sparkles, Trash2 } from 'lucide-react';
 import { Input } from '../components/Input';
 import { Dropdown } from '../components/Dropdown';
@@ -14,6 +15,7 @@ interface OnboardingDriverFlowProps {
 
 export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step, onNext }) => {
   const { updateProfile, uploadFile, profile } = useApp();
+  const { keyboardHeight } = useUI();
   const [isUploading, setIsUploading] = useState<string | null>(null);
 
   const [vehicle, setVehicle] = useState<NonNullable<UserProfile['vehicle']>>({
@@ -130,7 +132,7 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent transition-all duration-300">
+        <div className="shrink-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
           <button
             onClick={() => { updateProfile({ vehicle, location: localLocation }); onNext(); }}
             disabled={isUploading !== null || !vehicle.model.trim() || !vehicle.plate.trim() || !vehicle.color.trim() || !localLocation.trim()}
@@ -153,7 +155,7 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
         <p className="text-slate-500 text-lg font-medium">Upload photos for verification.</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar px-8 pb-32">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-8 pb-8">
         <div className="space-y-4 pt-4">
           {[
             { id: 'idCard', label: 'National ID Card' },
@@ -184,7 +186,7 @@ export const OnboardingDriverFlow: React.FC<OnboardingDriverFlowProps> = ({ step
           })}
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent flex flex-col gap-3">
+      <div className="shrink-0 p-6 bg-gradient-to-t from-white dark:from-black via-white/80 dark:via-black/80 to-transparent flex flex-col gap-3 transition-all duration-300" style={{ marginBottom: keyboardHeight > 0 ? `${keyboardHeight + 24}px` : '0px' }}>
         <button
           onClick={() => onNext({ vehicle })}
           className="w-full bg-slate-900 dark:bg-white text-white dark:text-black font-black py-5 rounded-[22px] shadow-xl active:scale-95 transition-all"

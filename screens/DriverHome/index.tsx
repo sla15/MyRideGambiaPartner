@@ -287,22 +287,17 @@ export const DriverHome: React.FC = () => {
                             });
                         } catch (error: any) {
                             console.error('Cancellation error:', error);
-                            // Even if RPC fails, we should try to un-stuck the UI if the ride is gone from our local knowledge
-                            if (currentRide) {
-                                const rideId = currentRide.id;
-                                setRejectedRideIds(prev => new Set(prev).add(rideId));
-                            }
-                        }
-                        const isDelivery = currentRide.type === 'DELIVERY' || isMerchant;
-                        notifyCustomer(isDelivery ? 'Delivery Update' : 'Ride Cancelled', isMerchant ? 'Driver unassigned. Searching for a new one.' : 'Driver had to cancel.');
-                        pushNotification(isDelivery ? 'Delivery Cancelled' : 'Trip Cancelled', 'Status changed to cancelled.', 'SYSTEM');
+                        } finally {
+                            // ADD TO REJECTED LIST IMMEDIATELY
+                            setRejectedRideIds(currentRide.id);
 
-                        // CLEAR ALL STATE TO RESET UI
-                        setCurrentRide(null);
-                        setIncomingRides([]);
-                        setRideStatus('IDLE');
-                        setIsDrawerExpanded(false);
-                        setSelectedMarkerInfo(null);
+                            // CLEAR ALL STATE TO RESET UI
+                            setCurrentRide(null);
+                            setIncomingRides([]);
+                            setRideStatus('IDLE');
+                            setIsDrawerExpanded(false);
+                            setSelectedMarkerInfo(null);
+                        }
                     }}
                     isProcessing={isProcessing}
                     onArrived={handleArrivedAtPickup}

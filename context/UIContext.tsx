@@ -2,6 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AppNotification, ChatSession, ChatMessage } from '../types';
 import { AlertModal } from '../components/AlertModal';
 import { useAuth } from './AuthContext';
+import { Keyboard } from '@capacitor/keyboard';
+
+interface WalkthroughStep {
+    id: string;
+    targetId: string;
+    title: string;
+    content: string;
+    action?: () => void;
+    nextTab?: string;
+}
 
 interface UIContextType {
     isDarkMode: boolean;
@@ -17,6 +27,17 @@ interface UIContextType {
     chatMessages: Record<string, ChatMessage[]>;
     sendMessage: (sessionId: string, text: string) => void;
     showAlert: (title: string, message: string, onConfirm?: () => void, confirmText?: string, cancelText?: string, onCancel?: () => void) => void;
+    
+    // Walkthrough
+    isWalkthroughOpen: boolean;
+    walkthroughSteps: WalkthroughStep[];
+    currentWalkthroughIndex: number;
+    startWalkthrough: (steps: WalkthroughStep[]) => void;
+    nextWalkthroughStep: () => void;
+    skipWalkthrough: () => void;
+
+    // Keyboard
+    keyboardHeight: number;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -43,6 +64,14 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         onCancel: undefined
     });
 
+    // Walkthrough state
+    const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(false);
+    const [walkthroughSteps, setWalkthroughSteps] = useState<WalkthroughStep[]>([]);
+    const [currentWalkthroughIndex, setCurrentWalkthroughIndex] = useState(0);
+
+    // Keyboard state
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+
     const { user } = useAuth();
 
     useEffect(() => {
@@ -50,6 +79,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             setNotifications([]);
             setChatMessages({});
             setActiveChat(null);
+            setIsWalkthroughOpen(false);
         }
     }, [user]);
 
@@ -70,6 +100,27 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         // Use addEventListener for modern browsers/Capacitor
         mediaQuery.addEventListener('change', handler);
         return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
+
+    useEffect(() => {
+        let showListener: any;
+        let hideListener: any;
+
+        const setupListeners = async () => {
+            showListener = await Keyboard.addListener('keyboardWillShow', info => {
+                setKeyboardHeight(info.keyboardHeight);
+            });
+            hideListener = await Keyboard.addListener('keyboardWillHide', () => {
+                setKeyboardHeight(0);
+            });
+        };
+
+        setupListeners();
+
+        return () => {
+            if (showListener) showListener.remove();
+            if (hideListener) hideListener.remove();
+        };
     }, []);
 
     const toggleTheme = () => setIsDarkMode(!isDarkMode);
@@ -93,11 +144,46 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
         setAlertModal({ isOpen: true, title, message, onConfirm, confirmText, cancelText, onCancel });
     };
 
+    // Walkthrough functions
+    const startWalkthrough = (steps: WalkthroughStep[]) => {
+        setWalkthroughSteps(steps);
+        setCurrentWalkthroughIndex(0);
+        setIsWalkthroughOpen(true);
+        
+        // Prep UI for first step
+        if (steps[0]) {
+            if (steps[0].action) steps[0].action();
+            if (steps[0].nextTab) setCurrentTab(steps[0].nextTab);
+        }
+    };
+
+    const nextWalkthroughStep = () => {
+        if (currentWalkthroughIndex < walkthroughSteps.length - 1) {
+            const nextIndex = currentWalkthroughIndex + 1;
+            const nextStep = walkthroughSteps[nextIndex];
+            
+            // Execute preparation for NEXT step before switching index
+            if (nextStep.action) nextStep.action();
+            if (nextStep.nextTab) setCurrentTab(nextStep.nextTab);
+            
+            setCurrentWalkthroughIndex(nextIndex);
+        } else {
+            setIsWalkthroughOpen(false);
+        }
+    };
+
+    const skipWalkthrough = () => {
+        setIsWalkthroughOpen(false);
+    };
+
     return (
         <UIContext.Provider value={{
             isDarkMode, toggleTheme, currentTab, setCurrentTab, notifications,
             pushNotification, removeNotification, activeChat, openChat, closeChat,
-            chatMessages, sendMessage, showAlert
+            chatMessages, sendMessage, showAlert,
+            isWalkthroughOpen, walkthroughSteps, currentWalkthroughIndex,
+            startWalkthrough, nextWalkthroughStep, skipWalkthrough,
+            keyboardHeight
         }}>
             {children}
             <AlertModal
