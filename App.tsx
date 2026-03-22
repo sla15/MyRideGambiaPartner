@@ -14,6 +14,14 @@ const AppContent: React.FC = () => {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
+    const handleFirstInteraction = () => {
+      import('./utils/fcm').then(({ unlockAudio }) => unlockAudio());
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+
     // Initialize Plugins
     const initPlugins = async () => {
       if (Capacitor.isNativePlatform()) {

@@ -5,6 +5,7 @@ import { useApp } from '../../context/AppContext';
 import { RideDrawer } from '../../components/RideDrawer';
 import { supabase } from '../../lib/supabase';
 import { calculateDistance } from '../../utils/geo';
+import { startNotificationLoop, stopNotificationLoop } from '../../utils/fcm';
 
 // Hooks
 import { useDriverMap } from './hooks/useDriverMap';
@@ -54,6 +55,15 @@ export const DriverHome: React.FC = () => {
     const [dragPos, setDragPos] = useState({ x: APP_WIDTH - 70, y: 100 });
     const isDragging = useRef(false);
     const dragOffset = useRef({ x: 0, y: 0 });
+
+    React.useEffect(() => {
+        if (incomingRides && incomingRides.length > 0 && !currentRide) {
+            startNotificationLoop();
+        } else {
+            stopNotificationLoop();
+        }
+        return () => stopNotificationLoop();
+    }, [incomingRides.length, currentRide]);
 
     const {
         mapRef,

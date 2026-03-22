@@ -207,13 +207,39 @@ const initWebPush = async (
     }
 };
 
-const playNotificationSound = () => {
+// Global Audio Instance to handle looping and Web AutoPlay bypass
+const notificationAudio = new Audio('/assets/cashregistersound.mp3');
+notificationAudio.loop = true;
+let isRinging = false;
+
+export const unlockAudio = () => {
+    notificationAudio.play().then(() => {
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+    }).catch(() => {});
+};
+
+export const startNotificationLoop = () => {
+    if (isRinging) return;
+    isRinging = true;
     try {
-        const audio = new Audio('/assets/cashregistersound.mp3');
-        audio.play().catch(err => console.error("🔊 Audio Playback Error:", err));
+        notificationAudio.currentTime = 0;
+        notificationAudio.play().catch(err => console.error("🔊 Audio Playback Error:", err));
     } catch (e) {
         console.error("🔊 Audio System Error:", e);
     }
+};
+
+export const stopNotificationLoop = () => {
+    isRinging = false;
+    try {
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+    } catch (e) {}
+};
+
+const playNotificationSound = () => {
+    startNotificationLoop();
 };
 
 export const syncFCMTokenToSupabase = async (userId: string, token: string) => {

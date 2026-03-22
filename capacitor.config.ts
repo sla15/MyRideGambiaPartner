@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'DROPOFF Partner',
   webDir: 'dist',
   plugins: {
-    PushNotifications: {
+    FirebaseMessaging: {
       presentationOptions: ["badge", "sound", "alert"],
     },
     Keyboard: {

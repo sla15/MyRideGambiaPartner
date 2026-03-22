@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { Toggle } from '../components/Toggle';
 import { Car, Star, LogOut, Moon, ArrowLeft, Store, Users, Trash2, ChevronRight, Camera as CameraIcon } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
+import { FirebaseMessaging } from '@capacitor-firebase/messaging';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 import { supabase } from '../lib/supabase';
@@ -30,7 +30,7 @@ export const ProfileScreen: React.FC = () => {
   React.useEffect(() => {
     const checkPerms = async () => {
       if (Capacitor.isNativePlatform()) {
-        const status = await PushNotifications.checkPermissions();
+        const status = await FirebaseMessaging.checkPermissions();
         setIsNotificationsEnabled(status.receive === 'granted');
       } else if (typeof window !== 'undefined' && 'Notification' in window) {
         setIsNotificationsEnabled(window.Notification?.permission === 'granted');
