@@ -184,25 +184,6 @@ export const useRideLifecycle = (
     const handleCompleteRide = async (isAuto = false) => {
         if (!currentRide || !user) return;
 
-        // --- Distance Verification Safeguard ---
-        if (!isAuto) {
-            let distToDest = 999;
-            if (currentRide.dropoff_lat && currentRide.dropoff_lng && profile.currentLat && profile.currentLng) {
-                distToDest = calculateDistance(profile.currentLat, profile.currentLng, currentRide.dropoff_lat, currentRide.dropoff_lng);
-            }
-
-            let distFromPickup = 0;
-            if (currentRide.pickup_lat && currentRide.pickup_lng && profile.currentLat && profile.currentLng) {
-                distFromPickup = calculateDistance(profile.currentLat, profile.currentLng, currentRide.pickup_lat, currentRide.pickup_lng);
-            }
-
-            // If not near destination AND hasn't moved at least 200m from pickup, prevent completion
-            if (distToDest > 0.2 && distFromPickup < 0.2) {
-                showAlert('Too Early', 'You are too far from the destination and haven\'t moved significantly from the pickup yet.');
-                return;
-            }
-        }
-
         setIsProcessing(true);
         try {
             setRideStatus('COMPLETED');
@@ -222,6 +203,8 @@ export const useRideLifecycle = (
             const isDelivery = currentRide.type === 'DELIVERY' || currentRide.type === 'MERCHANT_DELIVERY';
             if (data.final_price > 0) {
                 notifyCustomer(isDelivery ? 'Delivery Completed' : 'Trip Completed', isDelivery ? 'Your delivery has been completed. Thank you!' : 'You have arrived at your destination. Thank you for riding!');
+                // Follow up with a rating reminder
+                notifyCustomer('Rate your Experience', `Please take a moment to rate your ${isDelivery ? 'delivery' : 'driver'}. Your feedback helps us improve!`);
                 pushNotification(isDelivery ? 'Delivery Completed' : 'Ride Completed', `Total: ${appSettings.currency_symbol}${data.final_price}`, 'RIDE');
             } else {
                 notifyCustomer(isDelivery ? 'Delivery Cancelled' : 'Ride Cancelled', 'The ride was ended with zero movement.');

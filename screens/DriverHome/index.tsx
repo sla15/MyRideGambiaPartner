@@ -251,39 +251,6 @@ export const DriverHome: React.FC = () => {
                     onDecline={handleDeclineRide}
                     onCancel={async () => {
                         if (!currentRide) return;
-                        const originalStatus = rideStatus;
-                        const isMerchant = currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY';
-
-                        if (!isMerchant && originalStatus === 'NAVIGATING' && currentRide.pickup_lat && currentRide.pickup_lng && profile.currentLat && profile.currentLng) {
-                            const distFromPickup = calculateDistance(currentRide.pickup_lat, currentRide.pickup_lng, profile.currentLat, profile.currentLng);
-                            let distToDest = 999;
-                            if (currentRide.dropoff_lat && currentRide.dropoff_lng) {
-                                distToDest = calculateDistance(profile.currentLat, profile.currentLng, currentRide.dropoff_lat, currentRide.dropoff_lng);
-                            }
-                            
-                            if (distFromPickup >= 0.2 || distToDest <= 0.2) {
-                                try {
-                                    const { data, error } = await supabase.rpc('complete_ride', {
-                                        p_ride_id: currentRide.id,
-                                        p_driver_id: user?.id,
-                                        p_actual_lat: profile.currentLat || 0,
-                                        p_actual_lng: profile.currentLng || 0,
-                                        p_is_auto: false
-                                    });
-                                    if (error) throw error;
-                                    if (!data.success) throw new Error(data.error);
-                                    setCurrentRide(prev => prev ? { ...prev, price: data.final_price } : null);
-                                    setShowRatingModal(true);
-                                    await syncProfile();
-                                    return;
-                                } catch (e: any) {
-                                    console.error("Mid-trip completion error:", e);
-                                    pushNotification('Error', 'Failed to settle trip.', 'SYSTEM');
-                                    return;
-                                }
-                            }
-                        }
-
                         try {
                             const rideIdToReject = currentRide.id;
                             const { data, error } = await supabase.rpc('unassign_ride', {

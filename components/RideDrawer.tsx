@@ -455,59 +455,25 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({
 
                             {rideStatus === 'NAVIGATING' && (
                                 <div className="space-y-3">
-                                    {rideStatus === 'NAVIGATING' && (() => {
-                                        const R = 6371; // km
-                                        
-                                        // 1. Distance to destination
-                                        let distToDest = 999;
-                                        if (currentRide.dropoff_lat && currentRide.dropoff_lng && currentLat && currentLng) {
-                                            const dLat = (currentRide.dropoff_lat - currentLat) * Math.PI / 180;
-                                            const dLon = (currentRide.dropoff_lng - currentLng) * Math.PI / 180;
-                                            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                                Math.cos(currentLat * Math.PI / 180) * Math.cos(currentRide.dropoff_lat * Math.PI / 180) *
-                                                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                                            distToDest = R * c;
-                                        }
-
-                                        // 2. Distance from pickup
-                                        let distFromPickup = 0;
-                                        if (currentRide.pickup_lat && currentRide.pickup_lng && currentLat && currentLng) {
-                                            const dLat = (currentRide.pickup_lat - currentLat) * Math.PI / 180;
-                                            const dLon = (currentRide.pickup_lng - currentLng) * Math.PI / 180;
-                                            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                                                Math.cos(currentLat * Math.PI / 180) * Math.cos(currentRide.pickup_lat * Math.PI / 180) *
-                                                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                                            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                                            distFromPickup = R * c;
-                                        }
-
-                                        // Show button if within 200m of destination OR moved 200m from pickup
-                                        const canComplete = distToDest < 0.2 || distFromPickup > 0.2;
-
-                                        if (canComplete) {
-                                            return (
-                                                <button
-                                                    disabled={isProcessing}
-                                                    onClick={onComplete}
-                                                    className={`w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest ${isProcessing ? 'opacity-70' : ''}`}
-                                                >
-                                                    {isProcessing ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-6 h-6 border-4 border-black/20 border-t-black rounded-full animate-spin" />
-                                                            ENDING...
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <CheckCircle size={24} /> 
-                                                            {rideType === 'PASSENGER' ? 'FINISH RIDE' : 'FINISH DELIVERY'}
-                                                        </>
-                                                    )}
-                                                </button>
-                                            );
-                                        }
-                                        return null;
-                                    })()}
+                                    {rideStatus === 'NAVIGATING' && (
+                                        <button
+                                            disabled={isProcessing}
+                                            onClick={onComplete}
+                                            className={`w-full bg-[#00E39A] text-black h-16 rounded-3xl font-black active:scale-[0.98] transition-all flex items-center justify-center gap-3 shadow-[0_12px_24px_rgba(0,227,154,0.3)] mb-2 uppercase tracking-widest ${isProcessing ? 'opacity-70' : ''}`}
+                                        >
+                                            {isProcessing ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 border-4 border-black/20 border-t-black rounded-full animate-spin" />
+                                                    ENDING...
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle size={24} /> 
+                                                    {rideType === 'PASSENGER' ? 'FINISH RIDE' : 'FINISH DELIVERY'}
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
 
                                     <div className="space-y-3">
                                         {rideType === 'MERCHANT_DELIVERY' && (
