@@ -3,7 +3,6 @@ import { AppNotification, ChatSession, ChatMessage } from '../types';
 import { AlertModal } from '../components/AlertModal';
 import { useAuth } from './AuthContext';
 import { Keyboard } from '@capacitor/keyboard';
-
 interface WalkthroughStep {
     id: string;
     targetId: string;
@@ -38,6 +37,7 @@ interface UIContextType {
 
     // Keyboard
     keyboardHeight: number;
+
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -122,6 +122,7 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
             if (hideListener) hideListener.remove();
         };
     }, []);
+
 
     const toggleTheme = () => setIsDarkMode(!isDarkMode);
 

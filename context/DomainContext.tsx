@@ -455,9 +455,11 @@ export const DomainProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                     await supabase.functions.invoke('send-fcm-notification', {
                         body: {
                             userIds: [existingRide.driver_id],
-                            title: "New Delivery Added!",
+                            title: `New Delivery Added! 📦 #${existingRide.id.slice(0, 4)}`,
                             message: `Another shop in your batch is ready. Total cash needed: D${totalCashUpfront}`,
-                            data: { type: 'batch_update', ride_id: existingRide.id }
+                            tag: existingRide.id,
+                            id: existingRide.id,
+                            data: { type: 'batch_update', ride_id: existingRide.id, tag: existingRide.id }
                         }
                     });
                 }

@@ -73,8 +73,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
                     </>
                 ) : (
                     <>
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Rate {currentRide?.type === 'PASSENGER' ? currentRide?.passengerName : 'Customer'}</h3>
-                        <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-6">Optional Feedback</p>
+                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Rate {currentRide?.type === 'PASSENGER' ? currentRide?.passengerName : 'Customer'}</h3>
                         <div className="flex justify-center gap-2 mb-8 mt-4">
                             {[1, 2, 3, 4, 5].map((star) => (
                                 <button key={star} onClick={() => setUserRating(star)}>

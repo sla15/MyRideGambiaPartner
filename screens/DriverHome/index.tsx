@@ -255,8 +255,13 @@ export const DriverHome: React.FC = () => {
                         const isMerchant = currentRide.type === 'MERCHANT_DELIVERY' || currentRide.ride_type === 'MERCHANT_DELIVERY';
 
                         if (!isMerchant && originalStatus === 'NAVIGATING' && currentRide.pickup_lat && currentRide.pickup_lng && profile.currentLat && profile.currentLng) {
-                            const actualDist = calculateDistance(currentRide.pickup_lat, currentRide.pickup_lng, profile.currentLat, profile.currentLng);
-                            if (actualDist >= 0.1) {
+                            const distFromPickup = calculateDistance(currentRide.pickup_lat, currentRide.pickup_lng, profile.currentLat, profile.currentLng);
+                            let distToDest = 999;
+                            if (currentRide.dropoff_lat && currentRide.dropoff_lng) {
+                                distToDest = calculateDistance(profile.currentLat, profile.currentLng, currentRide.dropoff_lat, currentRide.dropoff_lng);
+                            }
+                            
+                            if (distFromPickup >= 0.2 || distToDest <= 0.2) {
                                 try {
                                     const { data, error } = await supabase.rpc('complete_ride', {
                                         p_ride_id: currentRide.id,
